@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.svg" width="140" alt="World Switcher icon">
+</p>
+
 # World Switcher
 
 Server-side-only NeoForge 1.21.1 mod for running multiple worlds on one server, Multiverse-style:

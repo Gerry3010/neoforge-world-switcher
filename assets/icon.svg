@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#17222e"/>
+      <stop offset="1" stop-color="#0d1420"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7ed957"/>
+      <stop offset="0.35" stop-color="#5cb544"/>
+      <stop offset="0.36" stop-color="#8a5a3b"/>
+      <stop offset="1" stop-color="#6b4226"/>
+    </linearGradient>
+    <linearGradient id="other" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b06ae0"/>
+      <stop offset="0.35" stop-color="#8e4ec6"/>
+      <stop offset="0.36" stop-color="#4a2a6e"/>
+      <stop offset="1" stop-color="#331d4d"/>
+    </linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9be86f"/>
+      <stop offset="0.49" stop-color="#8adf63"/>
+      <stop offset="0.51" stop-color="#c98cf0"/>
+      <stop offset="1" stop-color="#b478e2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect x="8" y="8" width="496" height="496" rx="96" fill="url(#bg)"/>
+
+  <!-- swap arrows (circling the cube) -->
+  <g fill="none" stroke="#4dd8e6" stroke-width="34" stroke-linecap="round">
+    <path d="M 116 330 A 172 172 0 0 1 176 132"/>
+    <path d="M 396 182 A 172 172 0 0 1 336 380"/>
+  </g>
+  <g fill="#4dd8e6">
+    <polygon points="176,132 150,86 216,96"/>
+    <polygon points="336,380 362,426 296,416"/>
+  </g>
+
+  <!-- isometric world cube: left half overworld, right half "other" world -->
+  <g stroke="#0d1420" stroke-width="6" stroke-linejoin="round">
+    <!-- top face -->
+    <polygon points="256,148 366,211 256,274 146,211" fill="url(#top)"/>
+    <!-- left face (overworld: grass + dirt) -->
+    <polygon points="146,211 256,274 256,400 146,337" fill="url(#grass)"/>
+    <!-- right face (other world: purple) -->
+    <polygon points="366,211 366,337 256,400 256,274" fill="url(#other)"/>
+  </g>
+
+  <!-- floating block particles -->
+  <g opacity="0.8">
+    <polygon points="404,130 422,140 404,150 386,140" fill="#c98cf0"/>
+    <polygon points="436,166 448,173 436,180 424,173" fill="#8e4ec6"/>
+    <polygon points="106,372 124,382 106,392 88,382" fill="#7ed957"/>
+    <polygon points="76,336 88,343 76,350 64,343" fill="#5cb544"/>
+  </g>
+</svg>
