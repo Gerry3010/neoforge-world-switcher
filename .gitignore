@@ -52,3 +52,6 @@ test-server/server-input.pipe
 .claude/jobs/
 test-server/config/worldswitcher-server.toml
 test-server/eula.txt
+
+# local repro/debug server
+repro-server/
