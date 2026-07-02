@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+
+      - name: Get version from tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Extract changelog for this version
+        run: |
+          VERSION="${{ env.VERSION }}"
+          # Extract the block between ## [VERSION] and the next ## [
+          NOTES=$(awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md)
+          {
+            echo "RELEASE_NOTES<<EOF"
+            echo "## World Switcher v${VERSION}"
+            echo ""
+            echo "${NOTES}"
+            echo ""
+            echo "### 🚀 Installation"
+            echo "1. Download the jar file"
+            echo "2. Place it in your server's \`mods\` folder (server-side only — clients don't need it)"
+            echo "3. Make sure the server runs NeoForge for Minecraft 1.21.1"
+            echo ""
+            echo "### 🔧 Configuration"
+            echo "See the [README](https://github.com/Gerry3010/neoforge-world-switcher/blob/main/README.md)"
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: World Switcher v${{ env.VERSION }}
+          body: ${{ env.RELEASE_NOTES }}
+          files: build/libs/*.jar
+          draft: false
+          prerelease: false
+
+      - name: Notify pipepush
+        if: always()
+        run: |
+          curl -sf -X POST "$PIPEPUSH_SERVER/api/webhook" \
+            -H "Content-Type: application/json" \
+            -d "{\"token\":\"$PIPEPUSH_TOKEN\",\"status\":\"${{ job.status }}\",\"pipeline\":\"$GITHUB_WORKFLOW\",\"branch\":\"$GITHUB_REF_NAME\",\"commit\":\"$GITHUB_SHA\",\"runId\":\"$GITHUB_RUN_NUMBER\"}"
+        env:
+          PIPEPUSH_TOKEN: ${{ secrets.PIPEPUSH_TOKEN }}
+          PIPEPUSH_SERVER: ${{ vars.PIPEPUSH_SERVER }}
