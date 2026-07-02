@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- `/wsc list` zeigt jetzt auch die `default`-Welt (mit Spielerzahl) und markiert die Welt des
+  Aufrufers mit „(you are here)" — vorher wirkte die Liste nach einem Tod (Respawn in der
+  Overworld) wie ein kaputter Spieler-Zähler.
 ### Added
 - Blankes `/ws` zeigt die Weltliste (klickbar, mit „you are here"-Markierung) statt eines
   Brigadier-Usage-Fehlers; blankes `/wsc` bzw. `/wsc help` zeigt eine Aktions-Übersicht.
