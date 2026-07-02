@@ -129,8 +129,27 @@ public final class WscCommand {
         CommandSourceStack source = context.getSource();
         MinecraftServer server = source.getServer();
         var entries = WorldRegistry.get(server).entries();
+        String currentGroup = source.getEntity() instanceof ServerPlayer player
+                ? WorldRegistry.groupOf(player.level().dimension()) : null;
 
-        source.sendSuccess(() -> Messages.highlight("Worlds (" + entries.size() + "):"), false);
+        source.sendSuccess(() -> Messages.highlight("Worlds (" + (entries.size() + 1) + "):"), false);
+
+        int defaultCount = 0;
+        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
+            if (WorldRegistry.DEFAULT_GROUP.equals(WorldRegistry.groupOf(online.level().dimension()))) {
+                defaultCount++;
+            }
+        }
+        var defaultLine = Component.literal("  ")
+                .append(Messages.runCommand(WorldRegistry.DEFAULT_GROUP, "/ws default", ChatFormatting.AQUA))
+                .append(Component.literal("  loaded").withStyle(ChatFormatting.GREEN))
+                .append(Component.literal("  " + defaultCount + " player" + (defaultCount == 1 ? "" : "s"))
+                        .withStyle(ChatFormatting.GRAY));
+        if (WorldRegistry.DEFAULT_GROUP.equals(currentGroup)) {
+            defaultLine.append(Component.literal("  (you are here)").withStyle(ChatFormatting.YELLOW));
+        }
+        source.sendSuccess(() -> defaultLine, false);
+
         for (WorldRegistry.WorldEntry entry : entries) {
             ServerLevel level = DynamicDimensionManager.getLoadedLevel(server, entry);
             boolean loaded = level != null;
@@ -144,12 +163,15 @@ public final class WscCommand {
                 line.append(Component.literal("  " + playerCount + " player" + (playerCount == 1 ? "" : "s"))
                         .withStyle(ChatFormatting.GRAY));
             }
+            if (entry.id().equals(currentGroup)) {
+                line.append(Component.literal("  (you are here)").withStyle(ChatFormatting.YELLOW));
+            }
             source.sendSuccess(() -> line, false);
         }
         if (entries.isEmpty()) {
             source.sendSuccess(() -> Messages.info("  (none — use /wsc import or /wsc create)"), false);
         }
-        return entries.size();
+        return entries.size() + 1;
     }
 
     private static int executeInfo(CommandContext<CommandSourceStack> context) {

@@ -1,0 +1,26 @@
+#Keep a separate player state (inventory, ender chest, XP, health, hunger,
+#effects, last position) per world group. The vanilla dimensions
+#(overworld/nether/end) count as one group 'default'.
+separateInventories = true
+#Permission level required to use /ws (0 = all players).
+#/wsc always requires permission level 2 (OP).
+# Default: 0
+# Range: 0 ~ 4
+wsPermissionLevel = 0
+#Folder containing importable world saves, relative to the server root
+#(absolute paths allowed). /wsc import scans this folder including subpaths.
+worldsFolder = "worlds"
+#Recreate all registered (not explicitly unloaded) worlds at server startup.
+autoLoadOnStartup = true
+#/ws returns players to their last position in the target world
+#(otherwise always the world spawn).
+restoreLastPosition = true
+#Include the game mode in the per-world player state.
+swapGamemode = false
+#If a portal or another mod teleports a player across world groups
+#(e.g. a nether portal inside an imported world), swap the player state
+#like /ws would. If false, such teleports are cancelled.
+handlePortalGroupChanges = true
+#Copy imported world folders on a background thread (the world is
+#registered on the server thread once the copy finishes).
+importCopyAsync = true
