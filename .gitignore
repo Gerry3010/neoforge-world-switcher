@@ -1,0 +1,54 @@
+# eclipse
+bin
+*.launch
+.settings
+.metadata
+.classpath
+.project
+
+# idea
+out
+*.ipr
+*.iws
+*.iml
+.idea
+
+# gradle
+build
+.gradle
+
+# other
+eclipse
+run
+runs
+run-data
+
+# test server (ignore runtime files but keep configuration)
+test-server/world/
+test-server/worlds/
+test-server/logs/
+test-server/cache/
+test-server/crash-reports/
+test-server/libraries/
+test-server/versions/
+test-server/mods/*.jar
+test-server/run.sh
+test-server/run.bat
+test-server/user_jvm_args.txt
+test-server/neoforge-installer.jar
+test-server/neoforge-installer.jar.log
+test-server/server.jar
+test-server/usercache.json
+test-server/usernamecache.json
+test-server/banned-*.json
+test-server/ops.json
+test-server/whitelist.json
+test-server/console*.log
+test-server/server-input.pipe
+
+.claude/worktrees/
+.claude/memory/
+.claude/plans/
+.claude/jobs/
+test-server/config/worldswitcher-server.toml
+test-server/eula.txt
