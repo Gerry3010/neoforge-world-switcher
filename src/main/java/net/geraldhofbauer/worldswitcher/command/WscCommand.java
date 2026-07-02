@@ -49,6 +49,9 @@ public final class WscCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("wsc")
                 .requires(source -> source.hasPermission(2))
+                .executes(WscCommand::executeHelp)
+                .then(Commands.literal("help")
+                        .executes(WscCommand::executeHelp))
                 .then(Commands.literal("list")
                         .executes(WscCommand::executeList))
                 .then(Commands.literal("info")
@@ -95,6 +98,22 @@ public final class WscCommand {
                         .executes(WscCommand::executeDeleteConfirm))
                 .then(Commands.literal("cancel")
                         .executes(WscCommand::executeDeleteCancel)));
+    }
+
+    /** Bare {@code /wsc} or {@code /wsc help}: short action overview. */
+    private static int executeHelp(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        source.sendSuccess(() -> Messages.highlight("World Switcher — /wsc <action>:"), false);
+        source.sendSuccess(() -> Messages.info("  list — all worlds (clickable)"), false);
+        source.sendSuccess(() -> Messages.info("  info <world> — seed, spawn, folder, size"), false);
+        source.sendSuccess(() -> Messages.info("  create <name> [seed] — create a fresh world"), false);
+        source.sendSuccess(() -> Messages.info("  import <source> [as <name>] — copy a world from the worlds folder"), false);
+        source.sendSuccess(() -> Messages.info("  rename <world> <newName> — rename (inventories survive)"), false);
+        source.sendSuccess(() -> Messages.info("  load/unload <world> — load or unload at runtime"), false);
+        source.sendSuccess(() -> Messages.info("  tp <player> <world> — switch another player"), false);
+        source.sendSuccess(() -> Messages.info("  delete <world> — delete world + data (asks to confirm)"), false);
+        source.sendSuccess(() -> Messages.info("Players switch with /ws <world>."), false);
+        return 1;
     }
 
     private static WorldRegistry.WorldEntry resolveWorld(CommandContext<CommandSourceStack> context) {

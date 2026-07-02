@@ -1,0 +1,298 @@
+{
+  "meta": {
+    "sanitize_config": true,
+    "rounding_unit": 0.5,
+    "merge_item_modifiers": true
+  },
+  "announcement": {
+    "enabled": true,
+    "check_interval_seconds": 5,
+    "history_size": 2
+  },
+  "per_player_difficulty": {
+    "enabled": true,
+    "counting": "EVERYWHERE",
+    "cap": 10,
+    "entities": [
+      {
+        "entity_matches": {
+          "attitude": "ANY",
+          "type": ""
+        },
+        "attributes": [
+          {
+            "attribute": "minecraft:generic.attack_damage",
+            "operation": "MULTIPLY_BASE",
+            "randomness": 0.0,
+            "value": 0.1,
+            "offset": 0.0
+          },
+          {
+            "attribute": "minecraft:generic.max_health",
+            "operation": "MULTIPLY_BASE",
+            "randomness": 0.0,
+            "value": 0.2,
+            "offset": 0.0
+          }
+        ],
+        "experience_multiplier": 0.0
+      }
+    ]
+  },
+  "difficulty_types": [
+    {
+      "name": "adventure",
+      "entities": [
+        {
+          "entity_matches": {
+            "attitude": "ANY",
+            "type": ""
+          },
+          "attributes": [
+            {
+              "attribute": "minecraft:generic.attack_damage",
+              "operation": "MULTIPLY_BASE",
+              "randomness": 0.0,
+              "value": 0.2,
+              "offset": 0.0
+            },
+            {
+              "attribute": "minecraft:generic.armor",
+              "operation": "ADDITION",
+              "randomness": 0.0,
+              "value": 1.0,
+              "offset": 0.0
+            },
+            {
+              "attribute": "minecraft:generic.max_health",
+              "operation": "MULTIPLY_BASE",
+              "randomness": 0.1,
+              "value": 0.25,
+              "offset": 0.0
+            }
+          ],
+          "experience_multiplier": 0.2
+        }
+      ]
+    },
+    {
+      "name": "dungeon",
+      "parent": "adventure",
+      "allow_loot_scaling": true,
+      "entities": [
+        {
+          "entity_matches": {
+            "attitude": "ANY",
+            "type": ""
+          },
+          "spawners": {
+            "spawn_range_multiplier": 0.0,
+            "spawn_count_multiplier": 0.5,
+            "max_nearby_entities_multiplier": 0.25,
+            "min_spawn_delay_multiplier": -0.1,
+            "max_spawn_delay_multiplier": -0.1,
+            "required_player_range_multiplier": 0.0
+          },
+          "attributes": [],
+          "experience_multiplier": 0.0
+        }
+      ]
+    },
+    {
+      "name": "heroic",
+      "parent": "dungeon",
+      "entities": []
+    }
+  ],
+  "loot_scaling": {
+    "armor": [
+      {
+        "item_matches": {
+          "id": "",
+          "loot_table_regex": "",
+          "rarity_regex": ""
+        },
+        "attributes": [
+          {
+            "attribute": "minecraft:generic.armor",
+            "operation": "MULTIPLY_BASE",
+            "randomness": 0.0,
+            "value": 0.1,
+            "offset": 0.0
+          },
+          {
+            "attribute": "minecraft:generic.max_health",
+            "operation": "ADDITION",
+            "randomness": 0.0,
+            "value": 1.0,
+            "offset": 0.0
+          }
+        ]
+      }
+    ],
+    "weapons": [
+      {
+        "item_matches": {
+          "id": "",
+          "loot_table_regex": "",
+          "rarity_regex": ""
+        },
+        "attributes": [
+          {
+            "attribute": "damage",
+            "operation": "MULTIPLY_BASE",
+            "randomness": 0.05,
+            "value": 0.1,
+            "offset": 0.0
+          },
+          {
+            "attribute": "power",
+            "operation": "MULTIPLY_BASE",
+            "randomness": 0.05,
+            "value": 0.1,
+            "offset": 0.0
+          }
+        ]
+      }
+    ],
+    "smithing_upgrade": {
+      "enabled": true,
+      "add_upon_upgrade": 0,
+      "multiply_upon_upgrade": 1.0
+    }
+  },
+  "dimensions": [
+    {
+      "world_matches": {
+        "dimension": "minecraft:overworld"
+      },
+      "zones": [
+        {
+          "zone_matches": {
+            "structure": "#dungeon_difficulty:level_3"
+          },
+          "difficulty": {
+            "name": "dungeon",
+            "level": 3
+          }
+        },
+        {
+          "zone_matches": {
+            "structure": "#dungeon_difficulty:level_2"
+          },
+          "difficulty": {
+            "name": "dungeon",
+            "level": 2
+          }
+        },
+        {
+          "zone_matches": {
+            "structure": "#dungeon_difficulty:level_1"
+          },
+          "difficulty": {
+            "name": "dungeon",
+            "level": 1
+          }
+        },
+        {
+          "zone_matches": {
+            "biome": "~desert|frozen|snowy|ice|jungle"
+          },
+          "difficulty": {
+            "name": "adventure",
+            "level": 1
+          }
+        }
+      ],
+      "zone_specifiers": [
+        {
+          "zone_matches": {
+            "structure": "#dungeon_difficulty:bosses"
+          },
+          "difficulty_name": "heroic"
+        }
+      ],
+      "entities": []
+    },
+    {
+      "world_matches": {
+        "dimension": "minecraft:the_nether"
+      },
+      "difficulty": {
+        "name": "adventure",
+        "level": 3
+      },
+      "zones": [
+        {
+          "zone_matches": {
+            "structure": "#dungeon_difficulty:level_4"
+          },
+          "difficulty": {
+            "name": "dungeon",
+            "level": 4
+          }
+        }
+      ],
+      "zone_specifiers": [],
+      "entities": [
+        {
+          "entity_type": "minecraft:wither",
+          "loot_table": "minecraft:entities/wither",
+          "difficulty": {
+            "name": "dungeon",
+            "level": 3
+          }
+        }
+      ]
+    },
+    {
+      "world_matches": {
+        "dimension": "minecraft:the_end"
+      },
+      "difficulty": {
+        "name": "adventure",
+        "level": 4
+      },
+      "zones": [
+        {
+          "zone_matches": {
+            "biome": "minecraft:the_end"
+          },
+          "difficulty": {
+            "name": "heroic",
+            "level": 5
+          }
+        },
+        {
+          "zone_matches": {
+            "structure": "#dungeon_difficulty:level_6"
+          },
+          "difficulty": {
+            "name": "dungeon",
+            "level": 6
+          }
+        },
+        {
+          "zone_matches": {
+            "structure": "#dungeon_difficulty:level_5"
+          },
+          "difficulty": {
+            "name": "dungeon",
+            "level": 5
+          }
+        }
+      ],
+      "zone_specifiers": [],
+      "entities": [
+        {
+          "entity_type": "minecraft:ender_dragon",
+          "loot_table": "minecraft:entities/ender_dragon",
+          "difficulty": {
+            "name": "dungeon",
+            "level": 4
+          }
+        }
+      ]
+    }
+  ]
+}

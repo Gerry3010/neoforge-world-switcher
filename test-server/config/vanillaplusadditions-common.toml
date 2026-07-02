@@ -1,0 +1,629 @@
+#VanillaPlusAdditions Module Configuration
+#Enable debug logging for all modules (can be overridden by individual module settings)
+globalDebugLogging = false
+#Emergency workaround: suppress IndexOutOfBoundsException during structure start generation.
+#Use only to keep servers running while isolating incompatible worldgen mods.
+worldgenCrashGuardEnabled = false
+
+	#Configuration for Debug Overlay module
+	[modules.debug_overlay]
+		#Whether the Debug Overlay module is enabled
+		enabled = true
+		#Debug logging mode for the Debug Overlay module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+
+	#Configuration for Minecart Chunk Loading module
+	[modules.minecart_chunk_loading]
+		#Whether the Minecart Chunk Loading module is enabled
+		enabled = true
+		#Debug logging mode for the Minecart Chunk Loading module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#Chunk radius (Chebyshev) force-loaded around an active loader rail.
+		#0 = only the rail's own chunk; 1 = a 3x3 area; 2 = a 5x5 area.
+		#This is the rolling-load LOOKAHEAD: a larger radius keeps a moving cart inside the
+		#loaded region longer so the window rolls along with it. Default 2 (5x5).
+		# Default: 2
+		# Range: 0 ~ 8
+		chunk_load_radius = 2
+		#How long a loader rail stays active (keeps chunks loaded) after the last
+		#minecart passed over it, in seconds.
+		# Default: 15
+		# Range: 1 ~ 300
+		active_timeout_seconds = 15
+		#Only force-load chunks while at least one player is online.
+		#When the last player leaves, loading pauses; on server start / first join the
+		#rail chunks that had carts are reloaded so stuck carts continue moving.
+		#false = keep loading even with nobody online (e.g. perpetual loops).
+		only_while_players_online = true
+
+		[modules.minecart_chunk_loading.overlay]
+			#Debug overlay: how many chunks around the player are scanned for loader
+			#rails to draw permanent chunk borders for.
+			# Default: 8
+			# Range: 1 ~ 16
+			chunk_border_scan_radius = 8
+			#Debug overlay: vertical extent (blocks above/below the rail) of the
+			#rendered chunk border band.
+			# Default: 24
+			# Range: 4 ~ 256
+			chunk_border_vertical_span = 24
+
+	#Configuration for Stationary Chunk Loader module
+	[modules.stationary_chunk_loader]
+		#Whether the Stationary Chunk Loader module is enabled
+		enabled = true
+		#Debug logging mode for the Stationary Chunk Loader module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#Chunk radius (Chebyshev) force-loaded around a Chunk Anchor.
+		#0 = only the anchor's own chunk; 1 = a 3x3 area; 2 = a 5x5 area.
+		#Higher = more chunks kept loaded and ticking (more server load).
+		# Default: 0
+		# Range: 0 ~ 8
+		chunk_load_radius = 0
+		#Only keep anchor chunks loaded while at least one player is online.
+		#When the last player leaves, anchors pause; on server start / first join the
+		#anchored chunks are reloaded.
+		#false = keep loading even with nobody online.
+		only_while_players_online = true
+
+	#Configuration for Hostile Zombified Piglins module
+	[modules.hostile_zombified_piglins]
+		#Whether the Hostile Zombified Piglins module is enabled
+		enabled = true
+		#Debug logging mode for the Hostile Zombified Piglins module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#Range in blocks to detect players and become hostile
+		# Default: 32
+		# Range: 1 ~ 128
+		detection_range = 32
+		#How long zombified piglins stay angry in ticks (-1 for indefinite)
+		# Default: 200
+		# Range: > -1
+		anger_duration = 200
+		#Time in seconds before a zombified piglin can switch to a new nearest player target
+		# Default: 5.0
+		# Range: 0.0 ~ 1.7976931348623157E308
+		target_switch_threshold = 5.0
+
+	#Configuration for Wither Skeleton Enforcer module
+	[modules.wither_skeleton]
+		#Whether the Wither Skeleton Enforcer module is enabled
+		enabled = true
+		#Debug logging mode for the Wither Skeleton Enforcer module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+
+	#Configuration for Mob Glow Command module
+	[modules.mob_glow]
+		#Whether the Mob Glow Command module is enabled
+		enabled = true
+		#Debug logging mode for the Mob Glow Command module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#Default duration in seconds for glow effect when 'infinite' is specified (-1 for truly infinite)
+		# Default: -1
+		# Range: > -1
+		default_duration = -1
+		#Maximum allowed duration in seconds for glow effect (0 for no limit)
+		# Default: 3600
+		# Range: > 0
+		max_duration = 3600
+		#Whether the command requires operator permissions
+		require_op = true
+		#Maximum number of mobs that can be affected per command (0 for no limit)
+		# Default: 100
+		# Range: > 0
+		max_mobs_per_command = 100
+
+	#Configuration for Block Glow module
+	[modules.block_glow]
+		#Whether the Block Glow module is enabled
+		enabled = true
+		#Debug logging mode for the Block Glow module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#Default search radius in blocks for /blockglow
+		# Default: 24
+		# Range: 1 ~ 128
+		default_radius = 24
+		#Maximum allowed radius in blocks for /blockglow
+		# Default: 64
+		# Range: 1 ~ 256
+		max_radius = 64
+		#Default glow duration in seconds (0 = infinite)
+		# Default: 60
+		# Range: > 0
+		default_duration_seconds = 60
+		#Maximum number of block outlines rendered per frame
+		# Default: 512
+		# Range: 16 ~ 8192
+		max_highlights_per_frame = 512
+		#Selection mode for which blocks are highlighted: nearest or scan_order
+		selection_mode = "nearest"
+
+		[modules.block_glow.outline_color]
+			#Red component of the outline color
+			# Default: 0.0
+			# Range: 0.0 ~ 1.0
+			red = 0.0
+			#Green component of the outline color
+			# Default: 1.0
+			# Range: 0.0 ~ 1.0
+			green = 1.0
+			#Blue component of the outline color
+			# Default: 1.0
+			# Range: 0.0 ~ 1.0
+			blue = 1.0
+			#Alpha component of the outline color
+			# Default: 1.0
+			# Range: 0.0 ~ 1.0
+			alpha = 1.0
+
+	#Configuration for Better Mobs module
+	[modules.better_mobs]
+		#Whether the Better Mobs module is enabled
+		enabled = true
+		#Debug logging mode for the Better Mobs module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#Chance (in percentage) for mobs to drop their enhanced gear upon death (0-100)
+		# Default: 10
+		# Range: 0 ~ 100
+		drop_chance = 10
+		#Maximum durability for enhanced gear as percentage (1-100%)
+		# Default: 100
+		# Range: 1 ~ 100
+		max_durability = 100
+		#Configuration for mobs spawned above Y=0
+		above_zero = ["GEAR_TYPES;gold;10", "GEAR_TYPES;chainmail;10", "GEAR_TYPES;leather;20", "ARMOR_CHANCES;helmet;60", "ARMOR_CHANCES;chestplate;50", "ARMOR_CHANCES;leggings;45", "ARMOR_CHANCES;boots;40", "HELMET_ENCHANTMENTS;protection;5", "HELMET_ENCHANTMENTS;fire_protection;2", "HELMET_ENCHANTMENTS;blast_protection;3", "HELMET_ENCHANTMENTS;projectile_protection;3", "HELMET_ENCHANTMENTS;thorns;4", "WEAPON_ENCHANTMENTS;sharpness;5", "WEAPON_ENCHANTMENTS;fire_aspect;2", "WEAPON_ENCHANTMENTS;knockback;3", "WEAPON_ENCHANTMENTS;unbreaking;5", "WEAPON_ENCHANTMENTS;power;5", "WEAPON_ENCHANTMENTS;punch;2", "WEAPON_ENCHANTMENTS;flame;2", "CHESTPLATE_ENCHANTMENTS;protection;5", "CHESTPLATE_ENCHANTMENTS;fire_protection;2", "CHESTPLATE_ENCHANTMENTS;blast_protection;3", "CHESTPLATE_ENCHANTMENTS;projectile_protection;3", "CHESTPLATE_ENCHANTMENTS;thorns;4", "LEGGINGS_ENCHANTMENTS;protection;5", "LEGGINGS_ENCHANTMENTS;fire_protection;2", "LEGGINGS_ENCHANTMENTS;blast_protection;3", "LEGGINGS_ENCHANTMENTS;projectile_protection;3", "LEGGINGS_ENCHANTMENTS;thorns;4", "BOOTS_ENCHANTMENTS;protection;5", "BOOTS_ENCHANTMENTS;fire_protection;2", "BOOTS_ENCHANTMENTS;blast_protection;3", "BOOTS_ENCHANTMENTS;projectile_protection;3", "BOOTS_ENCHANTMENTS;feather_falling;2", "BOOTS_ENCHANTMENTS;thorns;4", "BOOTS_ENCHANTMENTS;frost_walker;5", "ENCHANTMENT_LEVELS;min_level;1", "ENCHANTMENT_LEVELS;max_level;3", "POTION_EFFECTS;speed;10", "POTION_EFFECTS;strength;5", "POTION_EFFECTS;haste;5", "POTION_EFFECTS;fire_resistance;5", "WEAPON_TYPES;wood;65", "WEAPON_TYPES;stone;35", "WEAPON_RANDOMIZER;minecraft:skeleton;sword;35", "WEAPON_RANDOMIZER;minecraft:skeleton;axe;25"]
+		#Configuration for mobs spawned below Y=0 or in the Nether/End
+		below_zero = ["GEAR_TYPES;gold;10", "GEAR_TYPES;iron;30", "GEAR_TYPES;leather;10", "GEAR_TYPES;diamond;30", "ARMOR_CHANCES;helmet;80", "ARMOR_CHANCES;chestplate;70", "ARMOR_CHANCES;leggings;65", "ARMOR_CHANCES;boots;60", "HELMET_ENCHANTMENTS;protection;30", "HELMET_ENCHANTMENTS;fire_protection;15", "HELMET_ENCHANTMENTS;blast_protection;15", "HELMET_ENCHANTMENTS;projectile_protection;15", "HELMET_ENCHANTMENTS;respiration;20", "HELMET_ENCHANTMENTS;aqua_affinity;15", "HELMET_ENCHANTMENTS;thorns;10", "WEAPON_ENCHANTMENTS;sharpness;25", "WEAPON_ENCHANTMENTS;fire_aspect;10", "WEAPON_ENCHANTMENTS;knockback;10", "WEAPON_ENCHANTMENTS;unbreaking;20", "WEAPON_ENCHANTMENTS;power;20", "WEAPON_ENCHANTMENTS;punch;10", "WEAPON_ENCHANTMENTS;flame;10", "CHESTPLATE_ENCHANTMENTS;protection;30", "CHESTPLATE_ENCHANTMENTS;fire_protection;15", "CHESTPLATE_ENCHANTMENTS;blast_protection;15", "CHESTPLATE_ENCHANTMENTS;projectile_protection;15", "CHESTPLATE_ENCHANTMENTS;thorns;10", "LEGGINGS_ENCHANTMENTS;protection;30", "LEGGINGS_ENCHANTMENTS;fire_protection;15", "LEGGINGS_ENCHANTMENTS;blast_protection;15", "LEGGINGS_ENCHANTMENTS;projectile_protection;15", "LEGGINGS_ENCHANTMENTS;thorns;10", "BOOTS_ENCHANTMENTS;protection;30", "BOOTS_ENCHANTMENTS;fire_protection;15", "BOOTS_ENCHANTMENTS;blast_protection;15", "BOOTS_ENCHANTMENTS;projectile_protection;15", "BOOTS_ENCHANTMENTS;feather_falling;20", "BOOTS_ENCHANTMENTS;thorns;10", "BOOTS_ENCHANTMENTS;depth_strider;10", "BOOTS_ENCHANTMENTS;frost_walker;10", "ENCHANTMENT_LEVELS;min_level;2", "ENCHANTMENT_LEVELS;max_level;4", "POTION_EFFECTS;speed;10", "POTION_EFFECTS;strength;10", "POTION_EFFECTS;haste;10", "POTION_EFFECTS;fire_resistance;10", "WEAPON_TYPES;iron;50", "WEAPON_TYPES;gold;20", "WEAPON_TYPES;diamond;30", "WEAPON_RANDOMIZER;minecraft:skeleton;sword;40", "WEAPON_RANDOMIZER;minecraft:skeleton;axe;30"]
+		#Configuration for mobs spawned in the Nether or End dimension
+		nether_end = ["GEAR_TYPES;netherite;30", "ARMOR_CHANCES;helmet;80", "ARMOR_CHANCES;chestplate;70", "ARMOR_CHANCES;leggings;65", "ARMOR_CHANCES;boots;60", "HELMET_ENCHANTMENTS;protection;30", "HELMET_ENCHANTMENTS;fire_protection;15", "HELMET_ENCHANTMENTS;blast_protection;15", "HELMET_ENCHANTMENTS;projectile_protection;15", "HELMET_ENCHANTMENTS;thorns;10", "WEAPON_ENCHANTMENTS;sharpness;30", "WEAPON_ENCHANTMENTS;fire_aspect;15", "WEAPON_ENCHANTMENTS;knockback;15", "WEAPON_ENCHANTMENTS;unbreaking;25", "WEAPON_ENCHANTMENTS;power;25", "WEAPON_ENCHANTMENTS;punch;15", "WEAPON_ENCHANTMENTS;flame;15", "CHESTPLATE_ENCHANTMENTS;protection;30", "CHESTPLATE_ENCHANTMENTS;fire_protection;15", "CHESTPLATE_ENCHANTMENTS;blast_protection;15", "CHESTPLATE_ENCHANTMENTS;projectile_protection;15", "CHESTPLATE_ENCHANTMENTS;thorns;10", "LEGGINGS_ENCHANTMENTS;protection;30", "LEGGINGS_ENCHANTMENTS;fire_protection;15", "LEGGINGS_ENCHANTMENTS;blast_protection;15", "LEGGINGS_ENCHANTMENTS;projectile_protection;15", "LEGGINGS_ENCHANTMENTS;thorns;10", "BOOTS_ENCHANTMENTS;protection;30", "BOOTS_ENCHANTMENTS;fire_protection;15", "BOOTS_ENCHANTMENTS;blast_protection;15", "BOOTS_ENCHANTMENTS;projectile_protection;15", "BOOTS_ENCHANTMENTS;feather_falling;20", "BOOTS_ENCHANTMENTS;thorns;10", "BOOTS_ENCHANTMENTS;depth_strider;10", "BOOTS_ENCHANTMENTS;frost_walker;10", "ENCHANTMENT_LEVELS;min_level;2", "ENCHANTMENT_LEVELS;max_level;4", "POTION_EFFECTS;speed;20", "POTION_EFFECTS;strength;10", "POTION_EFFECTS;haste;10", "POTION_EFFECTS;fire_resistance;10", "WEAPON_TYPES;gold;65", "WEAPON_TYPES;netherite;35", "WEAPON_RANDOMIZER;minecraft:skeleton;sword;45", "WEAPON_RANDOMIZER;minecraft:skeleton;axe;35"]
+		#List of mob entity IDs that should receive random equipment.
+		#(e.g. minecraft:zombie, minecraft:skeleton, minecraft:husk, minecraft:stray, minecraft:drowned,
+		#minecraft:spider, minecraft:cave_spider, minecraft:witch, minecraft:pillager,
+		#minecraft:vindicator, minecraft:evoker, minecraft:illusioner, minecraft:blaze,
+		#minecraft:wither_skeleton, minecraft:guardian, minecraft:elder_guardian, minecraft:shulker,
+		#minecraft:warden)
+		enabled_mobs = ["minecraft:zombie", "minecraft:skeleton", "minecraft:husk", "minecraft:stray", "minecraft:drowned", "minecraft:spider", "minecraft:cave_spider", "minecraft:witch", "minecraft:pillager", "minecraft:vindicator", "minecraft:evoker", "minecraft:illusioner", "minecraft:blaze", "minecraft:wither_skeleton", "minecraft:guardian", "minecraft:elder_guardian", "minecraft:shulker", "minecraft:warden", "minecraft:piglin", "minecraft:zombified_piglin"]
+		#List of mob entity IDs that can receive armor
+		#(e.g. minecraft:zombie, minecraft:skeleton, minecraft:husk, minecraft:wither_skeleton)
+		#
+		enabled_mobs_with_armor = ["minecraft:zombie", "minecraft:skeleton", "minecraft:husk", "minecraft:wither_skeleton"]
+
+	#Configuration for Death Coordinates Announcer module
+	[modules.death_coordinates]
+		#Whether the Death Coordinates Announcer module is enabled
+		enabled = true
+		#Debug logging mode for the Death Coordinates Announcer module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+
+	#Configuration for End Oxygen module
+	[modules.end_oxygen]
+		#Whether the End Oxygen module is enabled
+		enabled = true
+		#Debug logging mode for the End Oxygen module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#The number of ticks between each air depletion (1 = standard, higher = slower).
+		# Default: 2
+		# Range: 1 ~ 300
+		air_consumption_interval = 2
+		#Additional ticks added to the consumption interval per level of Water Breathing effect.
+		# Default: 4
+		# Range: 0 ~ 100
+		water_breathing_effect_interval_bonus = 4
+		#The amount of damage to apply when the player is out of air in the End.
+		# Default: 2.0
+		# Range: 0.5 ~ 20.0
+		out_of_air_damage = 2.0
+		#The interval (in ticks) at which damage is applied when out of air.
+		# Default: 20
+		# Range: 1 ~ 200
+		damage_tick = 20
+
+		[modules.end_oxygen.backtank]
+			#The number of ticks between each backtank air depletion (0 to disable depletion).
+			# Default: 20
+			# Range: 0 ~ 1000
+			backtank_depletion_rate = 20
+			#Whether a diving helmet is required along with the backtank to breathe.
+			requires_full_set = true
+
+	#Configuration for Flying Fish module
+	[modules.flying_fish]
+		#Whether the Flying Fish module is enabled
+		enabled = true
+		#Debug logging mode for the Flying Fish module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#Auto-hop behaviour of the Flying Fish Boots.
+		#  DEFAULT  - Automatic leaps when sprinting near the water surface (governed by leap_cooldown_ticks).
+		#  ARCADE   - Leaps trigger any time the player touches water while sprinting; cooldown is halved for a fast, bouncy dolphin feel.
+		#  REALISTIC - No automatic leaps; only the horizontal water-skim boost is applied.
+		#Allowed Values: DEFAULT, ARCADE, REALISTIC
+		leap_mode = "DEFAULT"
+		#Horizontal speed boost applied while sprinting over or through water with Flying Fish Boots.
+		# Default: 0.08
+		# Range: 0.0 ~ 1.0
+		boots_horizontal_boost = 0.08
+		#Vertical launch strength applied when the boots trigger a flying-fish leap.
+		# Default: 0.42
+		# Range: 0.0 ~ 2.0
+		boots_vertical_boost = 0.42
+		#Maximum downward speed while gliding after a water leap. Lower values glide longer.
+		# Default: 0.08
+		# Range: 0.01 ~ 1.0
+		max_glide_fall_speed = 0.08
+		#Cooldown between automatic flying-fish leaps from the water surface.
+		# Default: 14
+		# Range: 1 ~ 200
+		leap_cooldown_ticks = 14
+
+	#Configuration for Stackables module
+	[modules.stackables]
+		#Whether the Stackables module is enabled
+		enabled = true
+		#Debug logging mode for the Stackables module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#List of item entries to make stackable. Each entry must use the format namespace:id:stack (e.g. minecraft:mushroom_stew:64).
+		#The last part is the desired max stack size (1-64). If an item is not present it will be skipped.
+		stackable_items = ["minecraft:mushroom_stew:64", "minecraft:rabbit_stew:64", "minecraft:beetroot_soup:64", "minecraft:suspicious_stew:64", "minecraft:ender_pearl:64", "toughasnails:dirty_water_bottle:64", "toughasnails:purified_water_bottle:64", "toughasnails:apple_juice:64", "toughasnails:cactus_juice:64", "toughasnails:chorus_fruit_juice:64", "toughasnails:glow_berry_juice:64", "toughasnails:melon_juice:64", "toughasnails:pumpkin_juice:64", "toughasnails:sweet_berry_juice:64", "toughasnails:ice_cream:64", "toughasnails:charc_os:64", "create:builders_tea:64"]
+		#Default stack size for potions, splash potions, lingering potions, and tipped arrows.
+		# Default: 64
+		# Range: 1 ~ 64
+		default_potion_stack_size = 64
+
+	#Configuration for Haunted House module
+	[modules.haunted_house]
+		#Whether the Haunted House module is enabled
+		enabled = false
+		#Debug logging mode for the Haunted House module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#List of mobs to replace with the replacement entity in the format 'namespace:mob_id:replacement_rate'
+		#Example: 'minecraft:witch:10' means 10% of witches will be replaced with murmurs
+		target_mobs = ["minecraft:witch:10"]
+		#List of structure IDs where mob replacements should occur
+		#Example: 'dungeons_and_taverns:witch_villa'
+		target_structures = ["nova_structures:witch_villa", "dungeons_and_taverns:witch_villa"]
+		#Entity ID spawned as invisible replacement in target structures
+		#Example: 'alexsmobs:murmur' or 'minecraft:witch'
+		replacement_entity_id = "minecraft:witch"
+		#Spawn tuning preset for haunted structures
+		#Values: custom, balanced, structure_focused, courtyard
+		#custom = use the individual tuning values below
+		spawn_preset = "structure_focused"
+		#Chance (0-100%) that a mob spawn in target structures will be replaced with a witch
+		#This helps ensure more witches spawn in witch villas for replacement
+		#Set to 0 to disable witch spawning boost
+		# Default: 50.0
+		# Range: 0.0 ~ 100.0
+		witch_spawn_boost_chance = 50.0
+		#Enable fog/blindness effect for players inside target structures
+		#Creates a spooky atmosphere in haunted locations
+		enable_fog_effect = true
+		#Amplifier for the fog effect (0 = light fog, 1 = medium fog, 2+ = heavy fog)
+		#Higher values create denser fog
+		# Default: 0
+		# Range: 0 ~ 5
+		fog_effect_amplifier = 0
+		#How far below terrain surface a spawn is treated as cave-like and blocked
+		# Default: 6
+		# Range: 0 ~ 64
+		cave_depth_tolerance = 6
+		#Horizontal search radius (in blocks) to detect nearby covered building areas
+		# Default: 5
+		# Range: 1 ~ 24
+		sky_access_near_building_radius = 5
+		#Chance (0-100%) to allow haunted spawns in open-sky spots near a covered area
+		# Default: 15.0
+		# Range: 0.0 ~ 100.0
+		sky_access_around_building_chance = 15.0
+		#How many attempts are made to spread haunted spawns away from clusters
+		# Default: 8
+		# Range: 1 ~ 64
+		distribution_attempts = 8
+		#Horizontal offset radius (in blocks) used when distributing haunted spawns
+		# Default: 4
+		# Range: 0 ~ 24
+		distribution_radius = 4
+		#Minimum distance to other living mobs when selecting distributed spawn positions
+		# Default: 6
+		# Range: 0 ~ 64
+		min_distance_to_other_mobs = 6
+		#Horizontal scan radius for block-material based cave/structure detection
+		# Default: 2
+		# Range: 1 ~ 8
+		material_scan_horizontal_radius = 2
+		#Vertical scan radius for block-material based cave/structure detection
+		# Default: 1
+		# Range: 0 ~ 4
+		material_scan_vertical_radius = 1
+		#Minimum number of cave-like blocks near a position to treat it as likely cave
+		# Default: 8
+		# Range: 1 ~ 128
+		cave_material_threshold = 8
+		#Minimum number of structure-like blocks near a position to treat it as house/garden area
+		# Default: 4
+		# Range: 1 ~ 128
+		structure_material_threshold = 4
+		#Explicit structure material blocks (namespace:block) used for house/garden detection
+		#Wood/fence tags are handled separately; this list is for explicit blocks like cobble/stone bricks/paths
+		structure_material_blocks = ["minecraft:cobblestone_stairs", "minecraft:cobblestone_slab", "minecraft:mossy_cobblestone_stairs", "minecraft:mossy_cobblestone_slab", "minecraft:stone_bricks", "minecraft:cracked_stone_bricks", "minecraft:mossy_stone_bricks", "minecraft:chiseled_stone_bricks", "minecraft:stone_brick_stairs", "minecraft:stone_brick_slab", "minecraft:stone_brick_wall", "minecraft:mossy_stone_brick_stairs", "minecraft:mossy_stone_brick_slab", "minecraft:mossy_stone_brick_wall", "minecraft:grass_block", "minecraft:dirt_path", "minecraft:podzol", "minecraft:coarse_dirt", "minecraft:moss_block"]
+		#Explicit underground/cave material blocks (namespace:block) used for cave detection
+		underground_material_blocks = ["minecraft:stone", "minecraft:deepslate", "minecraft:cobbled_deepslate", "minecraft:andesite", "minecraft:diorite", "minecraft:granite", "minecraft:tuff"]
+		#Enable direct haunted spawns from cached indoor/garden areas (independent of vanilla spawn generator)
+		enable_direct_area_spawning = true
+		#Chance (0-100%) per interval to attempt a direct haunted spawn for a player in haunted areas
+		# Default: 35.0
+		# Range: 0.0 ~ 100.0
+		direct_spawn_attempt_chance = 35.0
+		#Tick interval for direct spawn attempts (20 ticks = 1 second)
+		# Default: 40
+		# Range: 20 ~ 1200
+		direct_spawn_interval_ticks = 40
+		#Chance (0-100%) that a direct haunted spawn becomes the configured replacement entity
+		# Default: 85.0
+		# Range: 0.0 ~ 100.0
+		direct_spawn_replacement_chance = 85.0
+		#How many cached spawn spots to sample when picking a direct haunted spawn
+		# Default: 10
+		# Range: 1 ~ 64
+		direct_spawn_candidate_samples = 10
+		#Horizontal scan radius around players to discover and cache indoor/garden spawn spots
+		# Default: 8
+		# Range: 2 ~ 48
+		area_scan_radius = 8
+		#Step size for cache area scans (higher = less CPU, less precision)
+		# Default: 3
+		# Range: 1 ~ 8
+		cache_scan_step = 3
+		#Chunk radius used when querying cached spots around players
+		# Default: 1
+		# Range: 0 ~ 4
+		cache_query_chunk_radius = 1
+		#Max interpolation steps for movement-based cache updates
+		# Default: 10
+		# Range: 1 ~ 64
+		movement_interpolation_max_steps = 10
+		#Minimum ticks between movement-driven cache refresh passes per player
+		# Default: 20
+		# Range: 1 ~ 400
+		cache_refresh_interval_ticks = 20
+		#How long cached spawn spots stay valid before being dropped
+		# Default: 180
+		# Range: 30 ~ 1800
+		cache_ttl_seconds = 180
+		#Ticks to reuse direct-spot validation before rechecking expensive cave/material/mob checks
+		# Default: 60
+		# Range: 1 ~ 1200
+		direct_spot_validation_interval_ticks = 60
+		#Minimum distance to players for direct haunted spawns
+		# Default: 8
+		# Range: 0 ~ 64
+		direct_spawn_min_player_distance = 8
+		#Maximum distance to players for direct haunted spawns
+		# Default: 36
+		# Range: 4 ~ 128
+		direct_spawn_max_player_distance = 36
+		#Maximum number of cached haunted spawn spots per dimension
+		# Default: 600
+		# Range: 100 ~ 10000
+		max_cached_spawn_spots_per_level = 600
+		#Radius used to inspect cached spots around the player for fog zone detection
+		# Default: 3
+		# Range: 1 ~ 16
+		fog_cache_proximity_radius = 3
+		#Base darkness duration in ticks for indoor haunted zones
+		# Default: 120
+		# Range: 20 ~ 1200
+		fog_indoor_base_duration_ticks = 120
+		#Base darkness duration in ticks for garden/open haunted zones
+		# Default: 50
+		# Range: 10 ~ 600
+		fog_garden_base_duration_ticks = 50
+		#Maximum lingering fog trail duration in ticks after indoor exposure
+		# Default: 160
+		# Range: 20 ~ 2400
+		fog_trail_max_ticks = 160
+		#How many trail ticks are lost per update when the player is outside
+		# Default: 20
+		# Range: 1 ~ 1200
+		fog_trail_decay_ticks = 20
+
+	#Configuration for Food Effects module
+	[modules.food_effects]
+		#Whether the Food Effects module is enabled
+		enabled = true
+		#Debug logging mode for the Food Effects module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#List of food effects. Format: item_id;effect_id;duration_in_ticks;amplifier;chance
+		#Example: minecraft:apple;minecraft:speed;200;0;1.0
+		food_effects = ["minecraft:cookie;minecraft:speed;160;1", "minecraft:rabbit_stew;toughasnails:internal_warmth;24000;0", "minecraft:mushroom_stew;toughasnails:internal_warmth;12000;0", "minecraft:beetroot_soup;toughasnails:internal_warmth;12000;0", "rottencreatures:magma_rotten_flesh;toughasnails:internal_warmth;6000;0", "create:builders_tea;toughasnails:internal_warmth;3600;0", "toughasnails:sweet_berry_juice;toughasnails:internal_warmth;3600;0", "rottencreatures:frozen_rotten_flesh;toughasnails:internal_chill;6000;0", "toughasnails:cactus_juice;toughasnails:internal_chill;3600;0", "minecraft:golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:enchanted_golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:golden_carrot;toughasnails:thirst;600;0;0.25", "minecraft:glow_berries;minecraft:glowing;60;0", "toughasnails:melon_juice;minecraft:regeneration;60;0", "toughasnails:glow_berry_juice;minecraft:glowing;120;0", "toughasnails:chorus_fruit_juice;minecraft:jump_boost;240;1", "minecraft:enchanted_golden_apple;toughasnails:climate_clemency;6000;0;1.0", "create:sweet_roll;minecraft:speed;120;0", "create:bar_of_chocolate;minecraft:speed;600;0", "create:bar_of_chocolate;minecraft:jump_boost;600;0", "create:chocolate_glazed_berries;minecraft:speed;60;0", "create:chocolate_glazed_berries;minecraft:jump_boost;60;0"]
+		#List of thirst effects. Format: item_id;thirst_amount;chance
+		#Example: create:builders_tea;2;1.0
+		thirst_effects = ["create:builders_tea;2;", "minecraft:beetroot_soup;6;", "minecraft:mushroom_stew;2;", "minecraft:rabbit_stew;2;", "minecraft:melon_slice;2;"]
+
+	#Configuration for Overpacked Slowdown Override module
+	[modules.overpacked_slowdown]
+		#Whether the Overpacked Slowdown Override module is enabled
+		enabled = true
+		#Debug logging mode for the Overpacked Slowdown Override module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#Multiplier applied to the Overpacked slowdown effect.
+		#0.0 = no slowdown (completely removes the effect),
+		#0.5 = half the original slowdown,
+		#1.0 = original slowdown (no change),
+		#2.0 = double the slowdown.
+		# Default: 0.0
+		# Range: 0.0 ~ 10.0
+		slowdown_multiplier = 0.0
+
+	#Configuration for Custom Crafting Recipes module
+	[modules.custom_crafting_recipes]
+		#Whether the Custom Crafting Recipes module is enabled
+		enabled = true
+		#Debug logging mode for the Custom Crafting Recipes module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#List of custom SHAPED recipes.
+		#Format: recipe_id;result_item;result_count;pattern;keys
+		#Pattern supports:
+		#  - AAA|BBB|AAA
+		#  - "AAA" "BBB" "AAA"
+		#Keys format: A=minecraft:green_wool,B=minecraft:chest
+		#Ingredients can also use tags, e.g. A=#minecraft:planks
+		#Example: vanillaplusadditions:giant_backpack;overpacked:giant_backpack;1;CDC|ABA|AAA;A=minecraft:leather,B=create:item_vault,C=minecraft:string,D=create:andesite_alloy
+		recipes = ["vanillaplusadditions:giant_backpack;overpacked:giant_backpack;1;CDC|ABA|AAA;A=minecraft:leather,B=create:item_vault,C=minecraft:string,D=create:andesite_alloy", "vanillaplusadditions:powered_rail_from_rails;minecraft:powered_rail;6;R R|RGR|RDR;R=minecraft:rail,G=minecraft:gold_ingot,D=minecraft:redstone", "vanillaplusadditions:detector_rail_from_rails;minecraft:detector_rail;6;R R|RPR|RDR;R=minecraft:rail,P=minecraft:stone_pressure_plate,D=minecraft:redstone", "vanillaplusadditions:activator_rail_from_rails;minecraft:activator_rail;6;RSR|RTR|RSR;R=minecraft:rail,S=minecraft:stick,T=minecraft:redstone_torch"]
+		#List of custom SHAPELESS recipes.
+		#Format: ingredient1,ingredient2,...->result_item[;result_count[;recipe_id]]
+		#Ingredients can use item IDs or tags (prefix with #)
+		#Example: minecraft:leather,minecraft:string->minecraft:bundle;1
+		#Short form: minecraft:leather,minecraft:string->minecraft:bundle
+		shapeless_recipes = ["minecraft:leather,minecraft:string->minecraft:bundle;1"]
+
+	#Configuration for Arm Target Overlay module
+	[modules.arm_target_overlay]
+		#Whether the Arm Target Overlay module is enabled
+		enabled = true
+		#Debug logging mode for the Arm Target Overlay module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+
+		[modules.arm_target_overlay.input_color]
+			#Red component for input (TAKE) position outlines
+			# Default: 1.0
+			# Range: 0.0 ~ 1.0
+			red = 1.0
+			#Green component for input (TAKE) position outlines
+			# Default: 0.6
+			# Range: 0.0 ~ 1.0
+			green = 0.6
+			#Blue component for input (TAKE) position outlines
+			# Default: 0.1
+			# Range: 0.0 ~ 1.0
+			blue = 0.1
+			#Alpha component for input (TAKE) position outlines
+			# Default: 0.8
+			# Range: 0.0 ~ 1.0
+			alpha = 0.8
+
+		[modules.arm_target_overlay.output_color]
+			#Red component for output (DEPOSIT) position outlines
+			# Default: 0.1
+			# Range: 0.0 ~ 1.0
+			red = 0.1
+			#Green component for output (DEPOSIT) position outlines
+			# Default: 0.9
+			# Range: 0.0 ~ 1.0
+			green = 0.9
+			#Blue component for output (DEPOSIT) position outlines
+			# Default: 0.7
+			# Range: 0.0 ~ 1.0
+			blue = 0.7
+			#Alpha component for output (DEPOSIT) position outlines
+			# Default: 0.8
+			# Range: 0.0 ~ 1.0
+			alpha = 0.8
+
+	#Configuration for Texture Kill module
+	[modules.texture_kill]
+		#Whether the Texture Kill module is enabled
+		enabled = true
+		#Debug logging mode for the Texture Kill module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#List of texture ResourceLocations to replace with a fully transparent 1x1 PNG.
+		#Format: namespace:textures/category/name.png
+		#Examples:
+		#  create:textures/entity/train_hat.png
+		#  minecraft:textures/block/stone.png
+		killed_textures = ["create:textures/entity/train_hat.png", "create:textures/entity/logistics_hat.png"]
+		#List of texture regions to erase (make transparent) within a texture.
+		#Format: namespace:textures/path.png@x1:y1-x2:y2  (exclusive end coordinates)
+		#Multiple regions on the same texture are supported by repeating the path with different @... suffixes.
+		#Examples:
+		#  minecraft:textures/entity/zombie/drowned.png@32:0-64:16
+		erase_regions = ["minecraft:textures/entity/zombie/drowned.png@32:0-64:16", "minecraft:textures/entity/zombie/drowned_necromancer.png@32:0-64:16", "minecraft:textures/entity/zombie/zombie_ollie.png@32:0-64:16", "minecraft:optifine/mob/zombie/drowned2.png@32:0-64:16", "minecraft:optifine/mob/zombie/drowned3.png@32:0-64:16", "minecraft:optifine/mob/zombie/drowned4.png@32:0-64:16", "minecraft:optifine/mob/zombie/drowned5.png@32:0-64:16", "minecraft:optifine/mob/zombie/drowned6.png@32:0-64:16", "minecraft:optifine/mob/zombie/drowned7.png@32:0-64:16", "minecraft:optifine/mob/zombie/drowned_outer_layer5.png@32:0-64:16", "minecraft:optifine/mob/zombie/drowned_outer_layer6.png@32:0-64:16", "minecraft:optifine/mob/zombie/husk2.png@32:0-64:16", "minecraft:optifine/mob/zombie/husk5.png@32:0-64:16", "minecraft:optifine/mob/zombie/husk7.png@32:0-64:16", "minecraft:optifine/mob/zombie/husk8.png@32:0-64:16", "minecraft:optifine/mob/zombie/husk9.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome2.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome4.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome5.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome6.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome7.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome8.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome9.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome10.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome11.png@32:0-64:16", "minecraft:optifine/mob/zombie/zombie_ollie2.png@32:0-64:16", "minecraft:optifine/mob/zombie/zombie_ollie3.png@32:0-64:16", "minecraft:optifine/mob/zombie/zombie_ollie4.png@32:0-64:16", "minecraft:optifine/mob/zombie/zombie_ollie5.png@32:0-64:16", "minecraft:optifine/mob/zombie/zombie_ollie6.png@32:0-64:16", "minecraft:optifine/mob/zombie/zombie_ollie7.png@32:0-64:16", "minecraft:optifine/mob/zombie/zombie_ollie8.png@32:0-64:16", "minecraft:optifine/mob/zombie/zom_biome2.png@86:28-128:60", "minecraft:optifine/mob/zombie/zom_biome3.png@86:28-128:60", "minecraft:optifine/mob/zombie/zom_biome6.png@86:28-128:60", "minecraft:optifine/mob/zombie/drowned_outer_layer2.png@86:28-128:60", "minecraft:optifine/mob/zombie/drowned_outer_layer3.png@86:28-128:60", "minecraft:optifine/mob/zombie/drowned_outer_layer7.png@86:28-128:60", "minecraft:optifine/mob/zombie/drowned_outer_layer8.png@86:28-128:60", "minecraft:textures/entity/zombie/zombie_ollie.png@86:28-128:60", "minecraft:optifine/mob/zombie/zombie_ollie2.png@86:28-128:60", "minecraft:optifine/mob/zombie/zombie_ollie3.png@86:28-128:60", "minecraft:optifine/mob/zombie/zombie_ollie4.png@86:28-128:60", "minecraft:optifine/mob/zombie/zombie_ollie5.png@86:28-128:60", "minecraft:optifine/mob/zombie/zombie_ollie6.png@86:28-128:60", "minecraft:optifine/mob/zombie/zombie_ollie7.png@86:28-128:60", "minecraft:optifine/mob/zombie/zombie_ollie8.png@86:28-128:60", "minecraft:textures/entity/zombie/drowned_necromancer.png@86:28-128:60", "minecraft:optifine/mob/zombie/drowned7.png@64:0-82:9", "minecraft:optifine/mob/zombie/drowned_outer_layer5.png@64:0-82:9", "minecraft:optifine/mob/zombie/husk8.png@64:0-82:9", "minecraft:optifine/mob/zombie/husk9.png@64:0-82:9", "minecraft:textures/entity/zombie/zombie_ollie.png@64:0-82:9", "minecraft:optifine/mob/zombie/zombie_ollie2.png@64:0-82:9", "minecraft:optifine/mob/zombie/zombie_ollie4.png@64:0-82:9", "minecraft:optifine/mob/zombie/zombie_ollie5.png@64:0-82:9", "minecraft:optifine/mob/zombie/zombie_ollie6.png@64:0-82:9", "minecraft:optifine/mob/zombie/zombie_ollie7.png@64:0-82:9", "minecraft:optifine/mob/zombie/zombie_ollie8.png@64:0-82:9", "minecraft:textures/entity/zombie/drowned_necromancer.png@64:0-82:9", "minecraft:optifine/mob/zombie/zombie_rare2.png@70:20-102:36", "minecraft:textures/entity/zombie/drowned_necromancer.png@70:20-102:36"]
+
+	#Configuration for Cat Guardian module
+	[modules.cat_guardian]
+		#Whether the Cat Guardian module is enabled
+		enabled = true
+		#Debug logging mode for the Cat Guardian module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+		#Radius (blocks) in which tamed cats are associated when shift-clicking a bowl
+		# Default: 64.0
+		# Range: 1.0 ~ 128.0
+		association_radius = 64.0
+		#How many ticks a single fish feeding keeps a cat in the 'fed' (guarding) state (20 ticks = 1 second)
+		# Default: 6000
+		# Range: 20 ~ 144000
+		fed_duration_ticks = 6000
+		#Horizontal radius (blocks, XZ) around the associated bowl in which a fed cat scans for and attacks hostile mobs
+		# Default: 32.0
+		# Range: 2.0 ~ 128.0
+		guard_radius = 32.0
+		#Vertical radius (blocks, Y) around the associated bowl — cats ignore mobs further away vertically
+		# Default: 16.0
+		# Range: 2.0 ~ 128.0
+		guard_radius_y = 16.0
+		#Radius (blocks) within which a cat without a bowl is automatically associated with a nearby bowl
+		# Default: 1.5
+		# Range: 0.5 ~ 4.0
+		auto_associate_radius = 1.5
+		#How many seconds the Glowing effect lasts on associated cats when looking at their bowl (1–300)
+		# Default: 30
+		# Range: 1 ~ 300
+		glow_duration_seconds = 30
+		#Maximum number of cats that can be associated with a single bowl or station
+		# Default: 8
+		# Range: 1 ~ 64
+		max_cats_per_station = 8
+		#Maximum XP points a single cat can hold before XP drops normally
+		# Default: 500
+		# Range: 0 ~ 10000
+		cat_xp_capacity = 500
+		#Maximum XP points a feeding station can hold before overflow stays on cats
+		# Default: 5000
+		# Range: 0 ~ 100000
+		station_xp_capacity = 5000
+		#XP points consumed per Bottle o' Enchanting produced at the station
+		# Default: 8
+		# Range: 1 ~ 64
+		xp_per_bottle = 8
+
+	#Configuration for Item Vault Viewer module
+	[modules.item_vault_viewer]
+		#Whether the Item Vault Viewer module is enabled
+		enabled = true
+		#Debug logging mode for the Item Vault Viewer module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+
+	#Configuration for Battle Dogs module
+	[modules.battle_dogs]
+		#Whether the Battle Dogs module is enabled
+		enabled = true
+		#Debug logging mode for the Battle Dogs module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"
+
+	#Configuration for Chunk Reset Command module
+	[modules.chunk_reset]
+		#Whether the Chunk Reset Command module is enabled
+		enabled = true
+		#Debug logging mode for the Chunk Reset Command module (AUTO = use global setting, ON = force enable, OFF = force disable)
+		#Allowed Values: AUTO, ON, OFF
+		debug_logging = "AUTO"

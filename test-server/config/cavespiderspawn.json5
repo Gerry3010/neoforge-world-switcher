@@ -1,0 +1,12 @@
+{
+	// The chance a spider that has spawned is a cave spider.
+	// min: 0.0, max: 1.0
+	"chanceSpiderIsCaveSpider": 0.15,
+	// When enabled, cave spiders will only spawn below the surface.
+	"onlySpawnCaveSpidersBelowSurface": true,
+	// When enabled, cave spiders will only spawn below the specific y value set in 'belowSpecificY'.
+	"onlySpawnCaveSpidersBelowSpecificY": false,
+	// The specific y value used in 'onlySpawnCaveSpidersBelowSpecificY'.
+	// min: -1000, max: 1000
+	"belowSpecificY": 0
+}

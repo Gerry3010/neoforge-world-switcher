@@ -4,6 +4,11 @@ All notable changes to World Switcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Blankes `/ws` zeigt die Weltliste (klickbar, mit „you are here"-Markierung) statt eines
+  Brigadier-Usage-Fehlers; blankes `/wsc` bzw. `/wsc help` zeigt eine Aktions-Übersicht.
+
 ## [1.0.0] - 2026-07-02
 ### Added
 - **`/ws <welt>`**: Weltwechsel zur Laufzeit ohne Server-Neustart (Multiverse-artig). Für alle

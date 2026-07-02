@@ -26,9 +26,40 @@ public final class WsCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("ws")
                 .requires(source -> source.hasPermission(Config.wsPermissionLevel()))
+                .executes(WsCommand::executeList)
                 .then(Commands.argument("world", StringArgumentType.word())
                         .suggests(WorldSuggestions.SWITCH_TARGETS)
                         .executes(WsCommand::executeSwitch)));
+    }
+
+    /** Bare {@code /ws}: list the switchable worlds instead of a Brigadier usage error. */
+    private static int executeList(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        var entries = WorldRegistry.get(source.getServer()).entries();
+        String current = source.getEntity() instanceof ServerPlayer player
+                ? WorldRegistry.groupOf(player.level().dimension()) : "";
+
+        source.sendSuccess(() -> Messages.info("Usage: /ws <world> — available worlds:"), false);
+        var defaultLine = net.minecraft.network.chat.Component.literal("  ")
+                .append(Messages.runCommand(WorldRegistry.DEFAULT_GROUP, "/ws default",
+                        net.minecraft.ChatFormatting.AQUA));
+        if (WorldRegistry.DEFAULT_GROUP.equals(current)) {
+            defaultLine.append(Messages.info("  (you are here)"));
+        }
+        source.sendSuccess(() -> defaultLine, false);
+        for (WorldRegistry.WorldEntry entry : entries) {
+            var line = net.minecraft.network.chat.Component.literal("  ")
+                    .append(Messages.runCommand(entry.name(), "/ws " + entry.name(),
+                            net.minecraft.ChatFormatting.AQUA));
+            if (entry.unloaded()) {
+                line.append(net.minecraft.network.chat.Component.literal("  unloaded")
+                        .withStyle(net.minecraft.ChatFormatting.RED));
+            } else if (entry.id().equals(current)) {
+                line.append(Messages.info("  (you are here)"));
+            }
+            source.sendSuccess(() -> line, false);
+        }
+        return entries.size() + 1;
     }
 
     private static int executeSwitch(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

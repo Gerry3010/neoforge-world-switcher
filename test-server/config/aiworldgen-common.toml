@@ -1,0 +1,6 @@
+#Anthropic API key (sk-ant-...). Required for the AI world type.
+api_key = ""
+#Natural-language description of the world to generate.
+prompt = "floating rainbow concrete islands with snowy spikes over a turquoise ocean"
+#Claude model id.
+model = "claude-opus-4-8"
