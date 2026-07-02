@@ -65,6 +65,7 @@ jobs:
       - name: Notify pipepush
         if: always()
         run: |
+          if [ -z "$PIPEPUSH_TOKEN" ]; then echo "PIPEPUSH_TOKEN not set — skipping notify"; exit 0; fi
           curl -sf -X POST "$PIPEPUSH_SERVER/api/webhook" \
             -H "Content-Type: application/json" \
             -d "{\"token\":\"$PIPEPUSH_TOKEN\",\"status\":\"${{ job.status }}\",\"pipeline\":\"$GITHUB_WORKFLOW\",\"branch\":\"$GITHUB_REF_NAME\",\"commit\":\"$GITHUB_SHA\",\"runId\":\"$GITHUB_RUN_NUMBER\"}"
