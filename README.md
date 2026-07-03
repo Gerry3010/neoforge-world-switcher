@@ -84,7 +84,7 @@ spawn.
   worn toolbelt). Exclude ids via `attachmentExcludes` (e.g. `["carryon:carry_on_data"]`).
 - **Persistent player NBT** (`swapPersistentData`, the `NeoForgeData` tag): used e.g. by
   Waystones and Quark. Individual keys can be kept out of the swap via
-  `persistentDataExcludes` (default: `["WaystonesData"]`).
+  `persistentDataExcludes`.
 - **Tough As Nails** (`swapToughAsNails`): thirst and temperature per world (TAN stores them
   outside the two mechanisms above; integrated via its API, inactive without TAN).
 
@@ -116,7 +116,7 @@ Handled edge cases:
 | `swapModAttachments` | `true` | NeoForge data attachments (Curios etc.) are per-world state |
 | `attachmentExcludes` | `[]` | Attachment ids that stay global |
 | `swapPersistentData` | `true` | Persistent player NBT (`NeoForgeData`) is per-world state |
-| `persistentDataExcludes` | `["WaystonesData"]` | Persistent-data keys that stay global |
+| `persistentDataExcludes` | `[]` | Persistent-data keys that stay global |
 | `swapToughAsNails` | `true` | Tough As Nails thirst/temperature are per-world state |
 
 ## Known behavior

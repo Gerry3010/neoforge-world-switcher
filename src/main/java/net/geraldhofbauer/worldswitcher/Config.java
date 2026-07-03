@@ -63,9 +63,9 @@ public final class Config {
             .define("swapPersistentData", true);
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> PERSISTENT_DATA_EXCLUDES = BUILDER
-            .comment("Top-level persistent-data keys that stay global. Default keeps the",
-                    "activated-waystones list shared across worlds.")
-            .defineListAllowEmpty("persistentDataExcludes", java.util.List.of("WaystonesData"), () -> "",
+            .comment("Top-level persistent-data keys that stay global (not swapped),",
+                    "e.g. [\"WaystonesData\"].")
+            .defineListAllowEmpty("persistentDataExcludes", java.util.List.of(), () -> "",
                     o -> o instanceof String);
 
     private static final ModConfigSpec.BooleanValue SWAP_TOUGH_AS_NAILS = BUILDER

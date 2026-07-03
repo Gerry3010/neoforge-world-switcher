@@ -4,6 +4,11 @@ All notable changes to World Switcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- `persistentDataExcludes` ist jetzt standardmäßig leer (die `WaystonesData`-Ausnahme brachte
+  in der Praxis nichts — Waystones verhalten sich ohnehin pro Welt).
+
 ## [1.2.0] - 2026-07-03
 ### Added
 - **Modded Spielerstatus pro Welt** (Teil von `separateInventories`): drei Mechanismen decken
