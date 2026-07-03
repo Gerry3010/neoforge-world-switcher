@@ -16,7 +16,7 @@ autoLoadOnStartup = true
 #(otherwise always the world spawn).
 restoreLastPosition = true
 #Include the game mode in the per-world player state.
-swapGamemode = true
+swapGamemode = false
 #If a portal or another mod teleports a player across world groups
 #(e.g. a nether portal inside an imported world), swap the player state
 #like /ws would. If false, such teleports are cancelled.
@@ -24,11 +24,3 @@ handlePortalGroupChanges = true
 #Copy imported world folders on a background thread (the world is
 #registered on the server thread once the copy finishes).
 importCopyAsync = true
-#Each managed world keeps its own game rules. /gamerule executed inside a
-#managed world changes only that world; in the vanilla dimensions it stays
-#global. If false, all worlds share the overworld's rules.
-perWorldGameRules = true
-#Each managed world keeps its own day time and weather. /time and /weather
-#executed inside a managed world change only that world. If false, time and
-#weather are inherited from the overworld (like the vanilla nether/end).
-perWorldTimeAndWeather = true

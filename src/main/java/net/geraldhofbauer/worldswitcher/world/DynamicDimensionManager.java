@@ -1,8 +1,10 @@
 package net.geraldhofbauer.worldswitcher.world;
 
+import com.mojang.serialization.Dynamic;
 import net.geraldhofbauer.worldswitcher.Config;
 import net.geraldhofbauer.worldswitcher.WorldSwitcherMod;
 import net.minecraft.Util;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -11,6 +13,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.border.BorderChangeListener;
@@ -20,7 +23,6 @@ import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.storage.DerivedLevelData;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.LevelEvent;
@@ -94,10 +96,21 @@ public final class DynamicDimensionManager {
         ChunkGenerator generator = server.overworld().getChunkSource().getGenerator();
         LevelStem stem = new LevelStem(dimensionType, generator);
 
-        // Shared with the overworld (time, weather, gamerules) — same behavior as vanilla
-        // nether/end.
-        DerivedLevelData levelData = new DerivedLevelData(server.getWorldData(),
-                server.getWorldData().overworldData());
+        // Spawn point, border, difficulty etc. derive from the overworld (like vanilla
+        // nether/end); game rules, day time and weather are per-world when configured.
+        boolean ownRules = Config.perWorldGameRules();
+        boolean ownTimeWeather = Config.perWorldTimeAndWeather();
+        GameRules rules = null;
+        if (ownRules) {
+            rules = entry.gameRules() != null
+                    ? new GameRules(new Dynamic<>(NbtOps.INSTANCE, entry.gameRules()))
+                    : server.getGameRules().copy();
+        }
+        long dayTime = entry.dayTime() >= 0 ? entry.dayTime() : server.overworld().getDayTime();
+        PerWorldLevelData levelData = new PerWorldLevelData(server.getWorldData(),
+                server.getWorldData().overworldData(), rules, ownTimeWeather,
+                dayTime, entry.clearWeatherTime(), entry.rainTime(), entry.thunderTime(),
+                entry.raining(), entry.thundering());
 
         DynamicServerLevel.PENDING_SEEDS.put(key, entry.seed());
         DynamicServerLevel level;
@@ -119,6 +132,12 @@ public final class DynamicDimensionManager {
         NeoForge.EVENT_BUS.post(new LevelEvent.Load(level));
 
         WorldRegistry registry = WorldRegistry.get(server);
+        entry.attachLiveData(levelData);
+        if (ownRules && entry.gameRules() == null) {
+            // Freeze the inherited global rules as this world's own — later global changes
+            // must not retroactively alter it.
+            registry.setGameRules(entry.id(), rules.createTag());
+        }
         if (entry.spawnPos() == null) {
             BlockPos spawn = computeSpawn(level);
             registry.setSpawn(entry.id(), spawn, 0.0F);
@@ -151,6 +170,7 @@ public final class DynamicDimensionManager {
         } catch (Exception e) {
             WorldSwitcherMod.LOGGER.error("Error saving world '{}' during unload", entry.name(), e);
         }
+        entry.detachLiveData();
         NeoForge.EVENT_BUS.post(new LevelEvent.Unload(level));
 
         BorderChangeListener borderListener = BORDER_LISTENERS.remove(key);
@@ -207,6 +227,25 @@ public final class DynamicDimensionManager {
                 }
             }
         }
+    }
+
+    /**
+     * Advances a managed world's own day time, called from {@code LevelTickEvent.Post}. Weather
+     * needs no equivalent — {@code ServerLevel.advanceWeatherCycle} already ticks per level and
+     * writes through the (now real) {@link PerWorldLevelData} setters. We deliberately do not
+     * use the {@code tickTime} constructor flag: it would also tick the shared game time and
+     * scheduled events, which stay owned by the overworld.
+     */
+    public static void tickTime(DynamicServerLevel level) {
+        PerWorldLevelData data = level.perWorldData();
+        if (data == null || !data.ownTimeAndWeather()) {
+            return;
+        }
+        if (level.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT)) {
+            data.setDayTime(data.getDayTime() + 1L);
+        }
+        // Time/weather mutate continuously while loaded; the registry pulls live values on save.
+        WorldRegistry.get(level.getServer()).setDirty();
     }
 
     public static BlockPos spawnOf(ServerLevel level, WorldRegistry.WorldEntry entry) {

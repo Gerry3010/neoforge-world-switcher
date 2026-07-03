@@ -2,6 +2,7 @@ package net.geraldhofbauer.worldswitcher.player;
 
 import net.geraldhofbauer.worldswitcher.Config;
 import net.geraldhofbauer.worldswitcher.WorldSwitcherMod;
+import net.geraldhofbauer.worldswitcher.command.GameRuleHelper;
 import net.geraldhofbauer.worldswitcher.util.Messages;
 import net.geraldhofbauer.worldswitcher.world.DynamicDimensionManager;
 import net.geraldhofbauer.worldswitcher.world.WorldRegistry;
@@ -67,8 +68,14 @@ public final class PlayerStateManager {
 
         @SubscribeEvent
         public void onChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-            if (!(event.getEntity() instanceof ServerPlayer player) || SWITCHING.contains(player.getUUID())) {
-                PENDING_CROSS.remove(event.getEntity().getUUID());
+            if (!(event.getEntity() instanceof ServerPlayer player)) {
+                return;
+            }
+            // Runs for every dimension change (incl. /ws): the target level's client-mirrored
+            // gamerule flags are only ever sent at login otherwise.
+            GameRuleHelper.syncClientRules(player);
+            if (SWITCHING.contains(player.getUUID())) {
+                PENDING_CROSS.remove(player.getUUID());
                 return;
             }
             PendingCross pending = PENDING_CROSS.remove(player.getUUID());
@@ -125,11 +132,50 @@ public final class PlayerStateManager {
             store.setCurrentGroup(player.getUUID(), actualGroup);
         }
 
+        /**
+         * Cross-world death with differing keepInventory rules: vanilla drops loot by the DEATH
+         * level's rule but restores the inventory by the RESPAWN level's rule. With per-world
+         * rules these can disagree — keep=true at death + keep=false at respawn would silently
+         * destroy the items (neither dropped nor restored), the reverse would duplicate XP.
+         * The death world's rule is authoritative.
+         */
+        @SubscribeEvent
+        public void onClone(PlayerEvent.Clone event) {
+            if (!event.isWasDeath()
+                    || !(event.getEntity() instanceof ServerPlayer player)
+                    || !(event.getOriginal() instanceof ServerPlayer original)) {
+                return;
+            }
+            var deathRules = original.serverLevel().getGameRules();
+            var respawnRules = player.serverLevel().getGameRules();
+            if (deathRules == respawnRules) {
+                return;
+            }
+            boolean keepAtDeath = deathRules.getBoolean(net.minecraft.world.level.GameRules.RULE_KEEPINVENTORY);
+            boolean keepAtRespawn = respawnRules.getBoolean(net.minecraft.world.level.GameRules.RULE_KEEPINVENTORY);
+            if (keepAtDeath && !keepAtRespawn) {
+                // Nothing was dropped, but vanilla skipped the restore — copy it over.
+                player.getInventory().replaceWith(original.getInventory());
+                player.setExperienceLevels(original.experienceLevel);
+                player.experienceProgress = original.experienceProgress;
+                player.totalExperience = original.totalExperience;
+            } else if (!keepAtDeath && keepAtRespawn) {
+                // Loot and XP orbs already dropped at the death spot, but vanilla restored the
+                // XP counters on top — zero them (the inventory was already emptied by the drop).
+                player.setExperienceLevels(0);
+                player.experienceProgress = 0.0F;
+                player.totalExperience = 0;
+            }
+        }
+
         @SubscribeEvent
         public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-            if (!(event.getEntity() instanceof ServerPlayer player)
-                    || event.isEndConquered()
-                    || !Config.separateInventories()) {
+            if (!(event.getEntity() instanceof ServerPlayer player)) {
+                return;
+            }
+            // Respawning can land in another level without a PlayerChangedDimensionEvent.
+            GameRuleHelper.syncClientRules(player);
+            if (event.isEndConquered() || !Config.separateInventories()) {
                 return;
             }
             PlayerStateStore store = PlayerStateStore.get(player.server);

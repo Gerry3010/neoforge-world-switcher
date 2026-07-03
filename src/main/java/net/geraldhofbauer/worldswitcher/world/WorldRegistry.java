@@ -46,6 +46,19 @@ public class WorldRegistry extends SavedData {
         private boolean unloaded;
         private final long importedAt;
         private final String sourcePath;
+        /** Per-world game rules snapshot; null = not owned yet (inherits global on first load). */
+        @Nullable
+        private CompoundTag gameRules;
+        /** Per-world day time; -1 = not owned yet (inherits the overworld's on first load). */
+        private long dayTime = -1L;
+        private int clearWeatherTime;
+        private int rainTime;
+        private int thunderTime;
+        private boolean raining;
+        private boolean thundering;
+        /** Live level data while the world is loaded — the registry serializes from it. */
+        @Nullable
+        private PerWorldLevelData liveData;
 
         public WorldEntry(String id, String name, long seed, @Nullable BlockPos spawnPos, float spawnAngle,
                           boolean unloaded, long importedAt, String sourcePath) {
@@ -92,6 +105,64 @@ public class WorldRegistry extends SavedData {
             return sourcePath;
         }
 
+        @Nullable
+        public CompoundTag gameRules() {
+            return gameRules;
+        }
+
+        public long dayTime() {
+            return dayTime;
+        }
+
+        public int clearWeatherTime() {
+            return clearWeatherTime;
+        }
+
+        public int rainTime() {
+            return rainTime;
+        }
+
+        public int thunderTime() {
+            return thunderTime;
+        }
+
+        public boolean raining() {
+            return raining;
+        }
+
+        public boolean thundering() {
+            return thundering;
+        }
+
+        void attachLiveData(PerWorldLevelData data) {
+            this.liveData = data;
+        }
+
+        /** Flush + detach on unload, so the stored values are what the next load starts from. */
+        void detachLiveData() {
+            flushLiveState();
+            this.liveData = null;
+        }
+
+        /** Copies the live level's rules/time/weather into the persisted fields. */
+        void flushLiveState() {
+            PerWorldLevelData data = liveData;
+            if (data == null) {
+                return;
+            }
+            if (data.ownGameRules()) {
+                gameRules = data.getGameRules().createTag();
+            }
+            if (data.ownTimeAndWeather()) {
+                dayTime = data.getDayTime();
+                clearWeatherTime = data.getClearWeatherTime();
+                rainTime = data.getRainTime();
+                thunderTime = data.getThunderTime();
+                raining = data.isRaining();
+                thundering = data.isThundering();
+            }
+        }
+
         public ResourceKey<Level> dimensionKey() {
             return ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
                     ResourceLocation.fromNamespaceAndPath(NAMESPACE, id));
@@ -120,6 +191,15 @@ public class WorldRegistry extends SavedData {
                     entryTag.getBoolean("unloaded"),
                     entryTag.getLong("importedAt"),
                     entryTag.getString("sourcePath"));
+            if (entryTag.contains("gameRules", Tag.TAG_COMPOUND)) {
+                entry.gameRules = entryTag.getCompound("gameRules");
+            }
+            entry.dayTime = entryTag.contains("dayTime") ? entryTag.getLong("dayTime") : -1L;
+            entry.clearWeatherTime = entryTag.getInt("clearWeatherTime");
+            entry.rainTime = entryTag.getInt("rainTime");
+            entry.thunderTime = entryTag.getInt("thunderTime");
+            entry.raining = entryTag.getBoolean("raining");
+            entry.thundering = entryTag.getBoolean("thundering");
             registry.entries.put(entry.id(), entry);
         }
         return registry;
@@ -129,6 +209,7 @@ public class WorldRegistry extends SavedData {
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (WorldEntry entry : entries.values()) {
+            entry.flushLiveState();
             CompoundTag entryTag = new CompoundTag();
             entryTag.putString("id", entry.id);
             entryTag.putString("name", entry.name);
@@ -142,6 +223,15 @@ public class WorldRegistry extends SavedData {
             entryTag.putBoolean("unloaded", entry.unloaded);
             entryTag.putLong("importedAt", entry.importedAt);
             entryTag.putString("sourcePath", entry.sourcePath);
+            if (entry.gameRules != null) {
+                entryTag.put("gameRules", entry.gameRules.copy());
+            }
+            entryTag.putLong("dayTime", entry.dayTime);
+            entryTag.putInt("clearWeatherTime", entry.clearWeatherTime);
+            entryTag.putInt("rainTime", entry.rainTime);
+            entryTag.putInt("thunderTime", entry.thunderTime);
+            entryTag.putBoolean("raining", entry.raining);
+            entryTag.putBoolean("thundering", entry.thundering);
             list.add(entryTag);
         }
         tag.put("worlds", list);
@@ -195,6 +285,24 @@ public class WorldRegistry extends SavedData {
         WorldEntry entry = entries.get(id);
         if (entry != null && entry.unloaded != unloaded) {
             entry.unloaded = unloaded;
+            setDirty();
+        }
+    }
+
+    public void setGameRules(String id, CompoundTag rulesTag) {
+        WorldEntry entry = entries.get(id);
+        if (entry != null) {
+            entry.gameRules = rulesTag;
+            setDirty();
+        }
+    }
+
+    /** Seeds time + rules from an imported world's level.dat (before its first load). */
+    public void setImportedState(String id, long dayTime, @Nullable CompoundTag rulesTag) {
+        WorldEntry entry = entries.get(id);
+        if (entry != null) {
+            entry.dayTime = dayTime;
+            entry.gameRules = rulesTag;
             setDirty();
         }
     }

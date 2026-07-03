@@ -30,7 +30,30 @@ group (overworld/nether/end) and always available. Tab completion lists all worl
 | `rename <world> <newName>` | Rename — inventories, spawns and the world folder are untouched |
 | `load` / `unload <world>` | Load/unload at runtime; unload moves players to the default spawn |
 | `tp <player> <world>` | Switch another player |
+| `gamerule <world> [<rule> [value]]` | Per-world game rules; without a rule, lists this world's overrides |
 | `delete <world>` | Delete world + data + stored inventories (asks for confirmation) |
+
+### Per-world game rules, time and weather
+
+Every managed world has its own game rules, day time and weather (config `perWorldGameRules` /
+`perWorldTimeAndWeather`). The vanilla `/gamerule`, `/time` and `/weather` commands are
+context-sensitive: executed **inside a managed world** they change only that world, executed in
+the vanilla dimensions they behave exactly like vanilla (global). To target a world from
+anywhere: `/wsc gamerule <world> …` or `/execute in worldswitcher:<id> run time|weather|gamerule …`.
+
+- New worlds start with a copy of the current global rules and the overworld's clock; imported
+  worlds keep the day time and game rules from their `level.dat`.
+- `doDaylightCycle`/`doWeatherCycle` work per world (frozen clock, eternal rain, …). Sleeping
+  skips only that world's night.
+- Still global by nature: `sendCommandFeedback`, `logAdminCommands`, `spawnChunkRadius`.
+- Works with modded rules too — e.g. Serene Seasons' `doSeasonCycle` (see below).
+
+### Serene Seasons
+
+[Serene Seasons](https://modrinth.com/mod/serene-seasons) already keeps its season progress per
+dimension, so it combines nicely: add your world to `whitelisted_dimensions` in
+`config/sereneseasons/seasons.toml` (e.g. `"worldswitcher:creative"`) and it gets its own season
+state; `doSeasonCycle` can be toggled per world like any other rule.
 
 ### Importing worlds
 
@@ -68,14 +91,16 @@ Handled edge cases:
 | `worldsFolder` | `worlds` | Import container folder (relative to server root) |
 | `autoLoadOnStartup` | `true` | Re-load registered worlds at server start |
 | `restoreLastPosition` | `true` | `/ws` returns you to your last position in that world |
-| `swapGamemode` | `false` | Include game mode in the per-world state |
+| `swapGamemode` | `true` | Game mode is part of the per-world state (first visit keeps the current one) |
 | `handlePortalGroupChanges` | `true` | Swap state on cross-group portal travel (else cancel it) |
 | `importCopyAsync` | `true` | Copy imports on a background thread |
+| `perWorldGameRules` | `true` | Each world keeps its own game rules |
+| `perWorldTimeAndWeather` | `true` | Each world keeps its own day time and weather |
 
 ## Known behavior
 
-- **Time, weather and gamerules are shared** across all worlds (they derive from the overworld,
-  exactly like the vanilla nether/end).
+- With `perWorldGameRules`/`perWorldTimeAndWeather` disabled, game rules, time and weather are
+  shared across all worlds (derived from the overworld, like the vanilla nether/end).
 - Custom worlds don't appear in `level.dat`'s world-gen settings; they are tracked in
   `world/data/worldswitcher_worlds.dat` and recreated at startup.
 - Other mods that iterate all levels (maps like BlueMap, etc.) will see the custom worlds and may

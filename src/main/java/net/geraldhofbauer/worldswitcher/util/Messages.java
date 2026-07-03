@@ -34,4 +34,12 @@ public final class Messages {
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(command))));
     }
+
+    /** Clickable text that puts a command into the chat input for editing. */
+    public static MutableComponent suggestCommand(String label, String command, ChatFormatting color) {
+        return Component.literal(label).withStyle(style -> style
+                .withColor(color)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, command))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(command))));
+    }
 }

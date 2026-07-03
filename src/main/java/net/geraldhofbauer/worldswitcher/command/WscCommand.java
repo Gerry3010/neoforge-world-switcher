@@ -90,6 +90,7 @@ public final class WscCommand {
                                 .then(Commands.argument("world", StringArgumentType.word())
                                         .suggests(WorldSuggestions.SWITCH_TARGETS)
                                         .executes(WscCommand::executeTp))))
+                .then(GameRuleHelper.buildWscGameruleNode())
                 .then(Commands.literal("delete")
                         .then(Commands.argument("world", StringArgumentType.word())
                                 .suggests(WorldSuggestions.REGISTERED_WORLDS)
@@ -111,6 +112,7 @@ public final class WscCommand {
         source.sendSuccess(() -> Messages.info("  rename <world> <newName> — rename (inventories survive)"), false);
         source.sendSuccess(() -> Messages.info("  load/unload <world> — load or unload at runtime"), false);
         source.sendSuccess(() -> Messages.info("  tp <player> <world> — switch another player"), false);
+        source.sendSuccess(() -> Messages.info("  gamerule <world> [<rule> [value]] — per-world game rules"), false);
         source.sendSuccess(() -> Messages.info("  delete <world> — delete world + data (asks to confirm)"), false);
         source.sendSuccess(() -> Messages.info("Players switch with /ws <world>."), false);
         return 1;

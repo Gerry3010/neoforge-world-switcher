@@ -1,8 +1,10 @@
 package net.geraldhofbauer.worldswitcher;
 
+import net.geraldhofbauer.worldswitcher.command.GameRuleHelper;
 import net.geraldhofbauer.worldswitcher.command.WsCommand;
 import net.geraldhofbauer.worldswitcher.command.WscCommand;
 import net.geraldhofbauer.worldswitcher.world.DynamicDimensionManager;
+import net.geraldhofbauer.worldswitcher.world.DynamicServerLevel;
 import net.geraldhofbauer.worldswitcher.world.ImportService;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -13,6 +15,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +44,21 @@ public class WorldSwitcherMod {
     public void onRegisterCommands(RegisterCommandsEvent event) {
         WsCommand.register(event.getDispatcher());
         WscCommand.register(event.getDispatcher());
+        // Hybrid /gamerule, /time and /weather: per-world inside managed worlds, vanilla
+        // behavior everywhere else (the config gate sits inside the executors).
+        GameRuleHelper.registerOverrides(event.getDispatcher());
     }
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         DynamicDimensionManager.loadPersistedWorlds(event.getServer());
+    }
+
+    @SubscribeEvent
+    public void onLevelTick(LevelTickEvent.Post event) {
+        if (event.getLevel() instanceof DynamicServerLevel level) {
+            DynamicDimensionManager.tickTime(level);
+        }
     }
 
     @SubscribeEvent

@@ -50,4 +50,10 @@ public class DynamicServerLevel extends ServerLevel {
         Long pending = PENDING_SEEDS.get(this.dimension());
         return pending != null ? pending : this.seed;
     }
+
+    /** The per-world level data, or null if this level runs on plain derived data. */
+    @Nullable
+    public PerWorldLevelData perWorldData() {
+        return this.levelData instanceof PerWorldLevelData data ? data : null;
+    }
 }

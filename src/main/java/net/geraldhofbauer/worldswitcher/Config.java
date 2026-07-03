@@ -31,8 +31,9 @@ public final class Config {
             .define("restoreLastPosition", true);
 
     private static final ModConfigSpec.BooleanValue SWAP_GAMEMODE = BUILDER
-            .comment("Include the game mode in the per-world player state.")
-            .define("swapGamemode", false);
+            .comment("Include the game mode in the per-world player state: switching worlds",
+                    "restores the mode you last had there (first visit keeps the current one).")
+            .define("swapGamemode", true);
 
     private static final ModConfigSpec.BooleanValue HANDLE_PORTAL_GROUP_CHANGES = BUILDER
             .comment("If a portal or another mod teleports a player across world groups",
@@ -44,6 +45,18 @@ public final class Config {
             .comment("Copy imported world folders on a background thread (the world is",
                     "registered on the server thread once the copy finishes).")
             .define("importCopyAsync", true);
+
+    private static final ModConfigSpec.BooleanValue PER_WORLD_GAME_RULES = BUILDER
+            .comment("Each managed world keeps its own game rules. /gamerule executed inside a",
+                    "managed world changes only that world; in the vanilla dimensions it stays",
+                    "global. If false, all worlds share the overworld's rules.")
+            .define("perWorldGameRules", true);
+
+    private static final ModConfigSpec.BooleanValue PER_WORLD_TIME_AND_WEATHER = BUILDER
+            .comment("Each managed world keeps its own day time and weather. /time and /weather",
+                    "executed inside a managed world change only that world. If false, time and",
+                    "weather are inherited from the overworld (like the vanilla nether/end).")
+            .define("perWorldTimeAndWeather", true);
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 
@@ -80,5 +93,13 @@ public final class Config {
 
     public static boolean importCopyAsync() {
         return IMPORT_COPY_ASYNC.get();
+    }
+
+    public static boolean perWorldGameRules() {
+        return PER_WORLD_GAME_RULES.get();
+    }
+
+    public static boolean perWorldTimeAndWeather() {
+        return PER_WORLD_TIME_AND_WEATHER.get();
     }
 }

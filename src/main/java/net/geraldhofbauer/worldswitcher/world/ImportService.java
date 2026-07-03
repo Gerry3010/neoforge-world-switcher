@@ -162,6 +162,9 @@ public final class ImportService {
                         id, name, levelDat.seed(), levelDat.spawnPos(), levelDat.spawnAngle(),
                         false, System.currentTimeMillis(), relPath);
                 liveRegistry.put(entry);
+                // The imported world keeps its own clock and rules from its level.dat
+                // (missing values fall back to the overworld's at first load).
+                liveRegistry.setImportedState(id, levelDat.dayTime(), levelDat.gameRules());
                 DynamicDimensionManager.getOrCreateLevel(server, entry);
                 source.sendSuccess(() -> Messages.success("Imported ")
                         .append(Messages.runCommand(name, "/ws " + name, ChatFormatting.AQUA))

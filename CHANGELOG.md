@@ -5,13 +5,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **Gamerules pro Welt** (`perWorldGameRules`, Default an): jede verwaltete Welt hat ihre eigenen
+  Gamerules — `keepInventory`, `mobGriefing`, `randomTickSpeed` usw. wirken nur dort. Neue Welten
+  starten mit einer Kopie der globalen Rules, Importe übernehmen die Rules aus ihrer `level.dat`.
+  Funktioniert auch mit Mod-Rules (z. B. Serene Seasons' `doSeasonCycle`).
+- **Tageszeit + Wetter pro Welt** (`perWorldTimeAndWeather`, Default an): eigene Uhr und eigenes
+  Wetter je Welt — ewige Nacht, Dauerregen, eingefrorene Zeit (`doDaylightCycle false`) sind
+  jetzt pro Welt möglich. Schlafen überspringt nur die Nacht der eigenen Welt. Importe übernehmen
+  die Uhrzeit aus ihrer `level.dat`.
+- **Kontextsensitive Vanilla-Commands**: `/gamerule`, `/time` und `/weather` wirken in einer
+  verwalteten Welt nur auf diese, in den Vanilla-Dimensionen global wie bisher.
+  `/execute in worldswitcher:<id> run …` targetet eine Welt von überall; neu außerdem
+  `/wsc gamerule <world> [<rule> [value]]` inkl. Override-Liste (ohne Rule-Argument).
+- Die drei client-seitigen Rules (`doImmediateRespawn`, `reducedDebugInfo`, `doLimitedCrafting`)
+  werden bei jedem Weltwechsel/Respawn an den Client nachsynchronisiert (Vanilla sendet sie nur
+  beim Login).
+- Blankes `/ws` zeigt die Weltliste (klickbar, mit „you are here"-Markierung) statt eines
+  Brigadier-Usage-Fehlers; blankes `/wsc` bzw. `/wsc help` zeigt eine Aktions-Übersicht.
+### Changed
+- `swapGamemode` ist jetzt standardmäßig **an**: der Gamemode ist Teil des Per-Welt-Status —
+  beim Wechsel wird der zuletzt in der Zielwelt genutzte Modus wiederhergestellt (Erstbesuch
+  behält den aktuellen). Bestehende Server behalten ihren Config-Wert.
 ### Fixed
 - `/wsc list` zeigt jetzt auch die `default`-Welt (mit Spielerzahl) und markiert die Welt des
   Aufrufers mit „(you are here)" — vorher wirkte die Liste nach einem Tod (Respawn in der
   Overworld) wie ein kaputter Spieler-Zähler.
-### Added
-- Blankes `/ws` zeigt die Weltliste (klickbar, mit „you are here"-Markierung) statt eines
-  Brigadier-Usage-Fehlers; blankes `/wsc` bzw. `/wsc help` zeigt eine Aktions-Übersicht.
+- Cross-World-Tod mit unterschiedlichem `keepInventory`: Vanilla droppt nach der Regel der
+  Todeswelt, stellt aber nach der Regel der Respawn-Welt wieder her — bei `true`→`false` wären
+  Items ersatzlos verschwunden. Die Regel der Todeswelt ist jetzt maßgeblich.
 
 ## [1.0.0] - 2026-07-02
 ### Added
