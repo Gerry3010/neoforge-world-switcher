@@ -53,6 +53,10 @@ public final class PlayerSnapshot {
         tag.putFloat("yaw", player.getYRot());
         tag.putFloat("pitch", player.getXRot());
 
+        // Modded state (attachments, persistent data, TAN) shares the snapshot format but is
+        // applied separately by PlayerStateManager — its timing differs (pre-teleport).
+        ModdedPlayerState.capture(player, tag);
+
         return tag;
     }
 

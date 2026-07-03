@@ -56,6 +56,9 @@ public class WorldRegistry extends SavedData {
         private int thunderTime;
         private boolean raining;
         private boolean thundering;
+        /** Per-world difficulty; null = not owned yet (inherits the global one on first load). */
+        @Nullable
+        private net.minecraft.world.Difficulty difficulty;
         /** Live level data while the world is loaded — the registry serializes from it. */
         @Nullable
         private PerWorldLevelData liveData;
@@ -134,6 +137,11 @@ public class WorldRegistry extends SavedData {
             return thundering;
         }
 
+        @Nullable
+        public net.minecraft.world.Difficulty difficulty() {
+            return difficulty;
+        }
+
         void attachLiveData(PerWorldLevelData data) {
             this.liveData = data;
         }
@@ -152,6 +160,9 @@ public class WorldRegistry extends SavedData {
             }
             if (data.ownGameRules()) {
                 gameRules = data.getGameRules().createTag();
+            }
+            if (data.ownDifficulty()) {
+                difficulty = data.getDifficulty();
             }
             if (data.ownTimeAndWeather()) {
                 dayTime = data.getDayTime();
@@ -200,6 +211,9 @@ public class WorldRegistry extends SavedData {
             entry.thunderTime = entryTag.getInt("thunderTime");
             entry.raining = entryTag.getBoolean("raining");
             entry.thundering = entryTag.getBoolean("thundering");
+            if (entryTag.contains("difficulty")) {
+                entry.difficulty = net.minecraft.world.Difficulty.byName(entryTag.getString("difficulty"));
+            }
             registry.entries.put(entry.id(), entry);
         }
         return registry;
@@ -232,6 +246,9 @@ public class WorldRegistry extends SavedData {
             entryTag.putInt("thunderTime", entry.thunderTime);
             entryTag.putBoolean("raining", entry.raining);
             entryTag.putBoolean("thundering", entry.thundering);
+            if (entry.difficulty != null) {
+                entryTag.putString("difficulty", entry.difficulty.getKey());
+            }
             list.add(entryTag);
         }
         tag.put("worlds", list);
@@ -297,12 +314,22 @@ public class WorldRegistry extends SavedData {
         }
     }
 
-    /** Seeds time + rules from an imported world's level.dat (before its first load). */
-    public void setImportedState(String id, long dayTime, @Nullable CompoundTag rulesTag) {
+    /** Seeds time, rules + difficulty from an imported world's level.dat (before first load). */
+    public void setImportedState(String id, long dayTime, @Nullable CompoundTag rulesTag,
+                                 @Nullable net.minecraft.world.Difficulty difficulty) {
         WorldEntry entry = entries.get(id);
         if (entry != null) {
             entry.dayTime = dayTime;
             entry.gameRules = rulesTag;
+            entry.difficulty = difficulty;
+            setDirty();
+        }
+    }
+
+    public void setDifficulty(String id, net.minecraft.world.Difficulty difficulty) {
+        WorldEntry entry = entries.get(id);
+        if (entry != null) {
+            entry.difficulty = difficulty;
             setDirty();
         }
     }

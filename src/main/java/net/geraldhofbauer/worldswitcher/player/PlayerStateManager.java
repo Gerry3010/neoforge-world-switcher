@@ -14,7 +14,9 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
@@ -35,11 +37,22 @@ public final class PlayerStateManager {
     /** Players currently teleported by {@link #switchPlayer} — their travel events are ours. */
     private static final Set<UUID> SWITCHING = ConcurrentHashMap.newKeySet();
 
-    /** Snapshot captured pre-teleport for portal/other-mod group crossings, committed post-travel. */
-    private record PendingCross(String fromGroup, CompoundTag snapshot) {
+    /**
+     * Snapshot captured pre-teleport for portal/other-mod group crossings, committed
+     * post-travel. {@code moddedApplied} = the target group's modded state was already applied
+     * pre-teleport (so mods' own join-syncs send fresh data to the client).
+     */
+    private record PendingCross(String fromGroup, CompoundTag snapshot, boolean moddedApplied) {
     }
 
     private static final Map<UUID, PendingCross> PENDING_CROSS = new HashMap<>();
+
+    /**
+     * Respawn/login: the modded state that belongs to the OLD group, captured before the live
+     * modded state is swapped early (in Clone / at level join). Merged into the old group's
+     * snapshot by the later respawn/login handler.
+     */
+    private static final Map<UUID, CompoundTag> PENDING_MODDED = new HashMap<>();
 
     private PlayerStateManager() {
     }
@@ -47,7 +60,11 @@ public final class PlayerStateManager {
     /** Event listener instance for the NeoForge game bus. */
     public static final Object EVENTS = new Object() {
 
-        @SubscribeEvent
+        /**
+         * LOWEST priority: runs after every potential canceller, so the modded pre-swap below
+         * only happens for teleports that will actually proceed.
+         */
+        @SubscribeEvent(priority = EventPriority.LOWEST)
         public void onTravelToDimension(EntityTravelToDimensionEvent event) {
             if (!(event.getEntity() instanceof ServerPlayer player) || SWITCHING.contains(player.getUUID())) {
                 return;
@@ -63,7 +80,31 @@ public final class PlayerStateManager {
                 return;
             }
             // Capture now — position and state are still pre-teleport.
-            PENDING_CROSS.put(player.getUUID(), new PendingCross(fromGroup, PlayerSnapshot.capture(player)));
+            CompoundTag snapshot = PlayerSnapshot.capture(player);
+            boolean moddedApplied = false;
+            if (ModdedPlayerState.anyEnabled()) {
+                // Modded state must be live before the destination-level join (mods like
+                // Curios sync their client view there).
+                applyModded(player, PlayerStateStore.get(player.server).getSnapshot(player.getUUID(), toGroup));
+                moddedApplied = true;
+            }
+            PENDING_CROSS.put(player.getUUID(), new PendingCross(fromGroup, snapshot, moddedApplied));
+        }
+
+        /**
+         * The tiny window where a travel event fired but the teleport aborted (entity removed):
+         * roll the modded state back before vanilla saves the player.
+         */
+        @SubscribeEvent
+        public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+            if (!(event.getEntity() instanceof ServerPlayer player)) {
+                return;
+            }
+            PendingCross pending = PENDING_CROSS.remove(player.getUUID());
+            if (pending != null && pending.moddedApplied()) {
+                ModdedPlayerState.apply(player, pending.snapshot());
+            }
+            PENDING_MODDED.remove(player.getUUID());
         }
 
         @SubscribeEvent
@@ -100,12 +141,45 @@ public final class PlayerStateManager {
                 // Keep the portal exit position — only the state is fresh.
                 PlayerSnapshot.applyFresh(player);
             }
+            if ((pending == null || !pending.moddedApplied()) && ModdedPlayerState.anyEnabled()) {
+                // Bypassed travel event: swap modded state post-join — server-correct, but
+                // mod client views (e.g. Curios HUD) may lag until the next join/relog.
+                applyModded(player, stored);
+            }
             store.setCurrentGroup(player.getUUID(), toGroup);
+        }
+
+        /**
+         * Login-reconciliation half of the modded swap: must run at the level join (before
+         * mods' own join-syncs at NORMAL priority, e.g. Curios) — the LoggedIn event fires too
+         * late. Login joins are identified by "already registered in the player list + never
+         * ticked"; respawn joins happen before list registration, teleport joins have ticked.
+         */
+        @SubscribeEvent(priority = EventPriority.HIGHEST)
+        public void onEntityJoinLevel(EntityJoinLevelEvent event) {
+            if (!(event.getEntity() instanceof ServerPlayer player)
+                    || !(event.getLevel() instanceof ServerLevel level)
+                    || !ModdedPlayerState.anyEnabled()
+                    || player.tickCount != 0
+                    || player.server.getPlayerList().getPlayer(player.getUUID()) != player) {
+                return;
+            }
+            PlayerStateStore store = PlayerStateStore.get(player.server);
+            String actualGroup = WorldRegistry.groupOf(level.dimension());
+            String trackedGroup = store.getCurrentGroup(player.getUUID());
+            if (trackedGroup.isEmpty() || trackedGroup.equals(actualGroup)) {
+                return;
+            }
+            CompoundTag oldModded = new CompoundTag();
+            ModdedPlayerState.capture(player, oldModded);
+            PENDING_MODDED.put(player.getUUID(), oldModded);
+            applyModded(player, store.getSnapshot(player.getUUID(), actualGroup));
         }
 
         @SubscribeEvent
         public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
             if (!(event.getEntity() instanceof ServerPlayer player) || !Config.separateInventories()) {
+                PENDING_MODDED.remove(event.getEntity().getUUID());
                 return;
             }
             PlayerStateStore store = PlayerStateStore.get(player.server);
@@ -122,14 +196,40 @@ public final class PlayerStateManager {
             // the overworld, but their live NBT still belongs to the old group.
             WorldSwitcherMod.LOGGER.info("Reconciling {}: tracked group '{}' but spawned in '{}'",
                     player.getGameProfile().getName(), trackedGroup, actualGroup);
-            store.putSnapshot(player.getUUID(), trackedGroup, PlayerSnapshot.capture(player));
+            CompoundTag oldSnapshot = PlayerSnapshot.capture(player);
+            CompoundTag pendingModded = PENDING_MODDED.remove(player.getUUID());
             CompoundTag stored = store.getSnapshot(player.getUUID(), actualGroup);
+            if (pendingModded != null) {
+                // Live modded state was already swapped at the level join — the old group's
+                // modded portion is the one captured there.
+                ModdedPlayerState.mergeModdedInto(pendingModded, oldSnapshot);
+            } else if (ModdedPlayerState.anyEnabled()) {
+                // Join handler missed (edge case) — swap modded now; client view may lag.
+                applyModded(player, stored);
+            }
+            store.putSnapshot(player.getUUID(), trackedGroup, oldSnapshot);
             if (stored != null) {
                 PlayerSnapshot.apply(player, stored);
             } else {
                 PlayerSnapshot.applyFresh(player);
             }
             store.setCurrentGroup(player.getUUID(), actualGroup);
+            // Vanilla dropped the player into the overworld at their OLD world's coordinates —
+            // often inside terrain or over a cliff; dying here would immediately shred the just
+            // reconciled state. Move them like /ws would: last stored position, else spawn.
+            MinecraftServer server = player.server;
+            PlayerSnapshot.StoredPosition lastPos = stored != null && Config.restoreLastPosition()
+                    ? PlayerSnapshot.StoredPosition.from(stored) : null;
+            ServerLevel lastPosLevel = lastPos != null ? resolveLevel(server, lastPos.dimension()) : null;
+            if (lastPosLevel != null
+                    && WorldRegistry.groupOf(lastPosLevel.dimension()).equals(actualGroup)) {
+                teleportGuarded(player, lastPosLevel, lastPos.x(), lastPos.y(), lastPos.z(),
+                        lastPos.yaw(), lastPos.pitch());
+            } else {
+                BlockPos spawn = server.overworld().getSharedSpawnPos();
+                teleportGuarded(player, server.overworld(), spawn.getX() + 0.5, spawn.getY(),
+                        spawn.getZ() + 0.5, 0.0F, 0.0F);
+            }
         }
 
         /**
@@ -168,6 +268,34 @@ public final class PlayerStateManager {
             }
         }
 
+        /**
+         * Death-respawn half of the modded swap. LOWEST: NeoForge's own attachment copy
+         * (copyOnDeath types, e.g. Curios) runs at NORMAL on the same event and must have
+         * finished before we capture the post-death state. Runs before the respawned player
+         * joins its level, so mods' join-syncs already send the respawn group's data.
+         */
+        @SubscribeEvent(priority = EventPriority.LOWEST)
+        public void onCloneModded(PlayerEvent.Clone event) {
+            if (!event.isWasDeath()
+                    || !(event.getEntity() instanceof ServerPlayer player)
+                    || !Config.separateInventories()
+                    || !ModdedPlayerState.anyEnabled()) {
+                return;
+            }
+            PlayerStateStore store = PlayerStateStore.get(player.server);
+            String respawnGroup = WorldRegistry.groupOf(player.serverLevel().dimension());
+            String previousGroup = store.getCurrentGroup(player.getUUID());
+            if (previousGroup.isEmpty() || previousGroup.equals(respawnGroup)) {
+                return;
+            }
+            // Post-death modded state belongs to the old group; onPlayerRespawn merges it into
+            // that group's snapshot. currentGroup is switched there, not here.
+            CompoundTag postDeathModded = new CompoundTag();
+            ModdedPlayerState.capture(player, postDeathModded);
+            PENDING_MODDED.put(player.getUUID(), postDeathModded);
+            applyModded(player, store.getSnapshot(player.getUUID(), respawnGroup));
+        }
+
         @SubscribeEvent
         public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
             if (!(event.getEntity() instanceof ServerPlayer player)) {
@@ -187,8 +315,17 @@ public final class PlayerStateManager {
             // Death in world X, respawn in another group (no bed there). The old group's snapshot
             // must become the post-death state — otherwise pre-death items would resurrect on the
             // next visit. The respawn group gets its stored state back.
-            store.putSnapshot(player.getUUID(), previousGroup, PlayerSnapshot.capture(player));
+            CompoundTag oldSnapshot = PlayerSnapshot.capture(player);
+            CompoundTag pendingModded = PENDING_MODDED.remove(player.getUUID());
             CompoundTag stored = store.getSnapshot(player.getUUID(), respawnGroup);
+            if (pendingModded != null) {
+                // Live modded state was already swapped in the Clone handler — the old group's
+                // modded portion is the post-death state captured there.
+                ModdedPlayerState.mergeModdedInto(pendingModded, oldSnapshot);
+            } else if (ModdedPlayerState.anyEnabled()) {
+                applyModded(player, stored);
+            }
+            store.putSnapshot(player.getUUID(), previousGroup, oldSnapshot);
             if (stored != null) {
                 PlayerSnapshot.apply(player, stored);
             } else {
@@ -214,8 +351,15 @@ public final class PlayerStateManager {
         }
 
         CompoundTag stored = store.getSnapshot(player.getUUID(), toGroup);
+        CompoundTag oldSnapshot = null;
         if (separate) {
-            store.putSnapshot(player.getUUID(), fromGroup, PlayerSnapshot.capture(player));
+            oldSnapshot = PlayerSnapshot.capture(player);
+            store.putSnapshot(player.getUUID(), fromGroup, oldSnapshot);
+            if (ModdedPlayerState.anyEnabled()) {
+                // Modded state must be live before the destination-level join — mods like
+                // Curios sync their client view when the player joins the target level.
+                applyModded(player, stored);
+            }
         }
 
         // Destination: stored last position (if enabled and still valid), else the world spawn.
@@ -245,7 +389,15 @@ public final class PlayerStateManager {
             pitch = 0.0F;
         }
 
-        teleportGuarded(player, destLevel, x, y, z, yaw, pitch);
+        try {
+            teleportGuarded(player, destLevel, x, y, z, yaw, pitch);
+        } catch (RuntimeException e) {
+            if (separate && oldSnapshot != null && ModdedPlayerState.anyEnabled()) {
+                // The player never left — roll the pre-applied modded state back.
+                ModdedPlayerState.apply(player, oldSnapshot);
+            }
+            throw e;
+        }
 
         if (separate) {
             if (stored != null) {
@@ -255,6 +407,15 @@ public final class PlayerStateManager {
             }
         }
         store.setCurrentGroup(player.getUUID(), toGroup);
+    }
+
+    /** Applies the modded portion of a snapshot, or modded defaults when none is stored. */
+    private static void applyModded(ServerPlayer player, @Nullable CompoundTag stored) {
+        if (stored != null) {
+            ModdedPlayerState.apply(player, stored);
+        } else {
+            ModdedPlayerState.applyFresh(player);
+        }
     }
 
     private static void teleportGuarded(ServerPlayer player, ServerLevel level,

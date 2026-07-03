@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
@@ -107,10 +108,14 @@ public final class DynamicDimensionManager {
                     : server.getGameRules().copy();
         }
         long dayTime = entry.dayTime() >= 0 ? entry.dayTime() : server.overworld().getDayTime();
+        boolean ownDifficulty = Config.perWorldDifficulty();
+        Difficulty difficulty = ownDifficulty
+                ? (entry.difficulty() != null ? entry.difficulty() : server.getWorldData().getDifficulty())
+                : null;
         PerWorldLevelData levelData = new PerWorldLevelData(server.getWorldData(),
                 server.getWorldData().overworldData(), rules, ownTimeWeather,
                 dayTime, entry.clearWeatherTime(), entry.rainTime(), entry.thunderTime(),
-                entry.raining(), entry.thundering());
+                entry.raining(), entry.thundering(), difficulty);
 
         DynamicServerLevel.PENDING_SEEDS.put(key, entry.seed());
         DynamicServerLevel level;
@@ -137,6 +142,12 @@ public final class DynamicDimensionManager {
             // Freeze the inherited global rules as this world's own — later global changes
             // must not retroactively alter it.
             registry.setGameRules(entry.id(), rules.createTag());
+        }
+        if (ownDifficulty) {
+            if (entry.difficulty() == null) {
+                registry.setDifficulty(entry.id(), difficulty);
+            }
+            applySpawnSettings(server, level, difficulty);
         }
         if (entry.spawnPos() == null) {
             BlockPos spawn = computeSpawn(level);
@@ -246,6 +257,19 @@ public final class DynamicDimensionManager {
         }
         // Time/weather mutate continuously while loaded; the registry pulls live values on save.
         WorldRegistry.get(level.getServer()).setDirty();
+    }
+
+    /**
+     * Mirrors {@code MinecraftServer.updateMobSpawningFlags} but with the world's own
+     * difficulty. When the GLOBAL difficulty is peaceful, {@code isSpawningMonsters()} cannot
+     * distinguish "peaceful" from a spawn-monsters=false server property — we then allow
+     * hostile spawns for non-peaceful managed worlds (documented edge).
+     */
+    public static void applySpawnSettings(MinecraftServer server, ServerLevel level, Difficulty difficulty) {
+        boolean hostileAllowed = server.isSpawningMonsters()
+                || server.getWorldData().getDifficulty() == Difficulty.PEACEFUL;
+        level.setSpawnSettings(difficulty != Difficulty.PEACEFUL && hostileAllowed,
+                server.isSpawningAnimals());
     }
 
     public static BlockPos spawnOf(ServerLevel level, WorldRegistry.WorldEntry entry) {

@@ -9,6 +9,9 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.geraldhofbauer.worldswitcher.Config;
 import net.geraldhofbauer.worldswitcher.util.Messages;
+import net.geraldhofbauer.worldswitcher.world.DynamicDimensionManager;
+import net.geraldhofbauer.worldswitcher.world.DynamicServerLevel;
+import net.geraldhofbauer.worldswitcher.world.PerWorldLevelData;
 import net.geraldhofbauer.worldswitcher.world.WorldRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -16,12 +19,14 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.TimeArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.protocol.game.ClientboundChangeDifficultyPacket;
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket;
 import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.valueproviders.IntProvider;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.GameRules;
 
 import javax.annotation.Nullable;
@@ -72,6 +77,7 @@ public final class GameRuleHelper {
         registerGameRule(dispatcher);
         registerTime(dispatcher);
         registerWeather(dispatcher);
+        registerDifficulty(dispatcher);
     }
 
     private static void registerGameRule(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -290,6 +296,135 @@ public final class GameRuleHelper {
 
     private static int resolveDuration(ServerLevel level, int time, IntProvider provider) {
         return time == -1 ? provider.sample(level.getRandom()) : time;
+    }
+
+    // ------------------------------------------------------------------ /difficulty
+
+    private static void registerDifficulty(CommandDispatcher<CommandSourceStack> dispatcher) {
+        LiteralArgumentBuilder<CommandSourceStack> difficulty = Commands.literal("difficulty")
+                .requires(source -> source.hasPermission(2))
+                .executes(context -> queryDifficulty(context.getSource()));
+        for (Difficulty value : Difficulty.values()) {
+            difficulty.then(Commands.literal(value.getKey())
+                    .executes(context -> setDifficulty(context.getSource(), value)));
+        }
+        dispatcher.register(difficulty);
+    }
+
+    private static int queryDifficulty(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        Difficulty difficulty = level.getDifficulty();
+        MutableComponent message = Component.translatable("commands.difficulty.query",
+                difficulty.getDisplayName());
+        if (Config.perWorldDifficulty() && isManaged(level)) {
+            message.append(Messages.info(" (world '" + worldName(level) + "')"));
+        }
+        source.sendSuccess(() -> message, false);
+        return difficulty.getId();
+    }
+
+    private static int setDifficulty(CommandSourceStack source, Difficulty difficulty) {
+        ServerLevel managed = managedLevel(source, Config.perWorldDifficulty());
+        if (managed != null) {
+            return setWorldDifficulty(source, managed, difficulty);
+        }
+        MinecraftServer server = source.getServer();
+        if (server.getWorldData().getDifficulty() == difficulty) {
+            source.sendFailure(Component.translatable("commands.difficulty.failure", difficulty.getKey()));
+            return 0;
+        }
+        server.setDifficulty(difficulty, true);
+        // Vanilla just clobbered every level's spawn flags with the global difficulty —
+        // restore the managed worlds' own settings. (The difficulty packets are fine: vanilla
+        // sends each player the value of their own level.)
+        reapplyManagedSpawnFlags(server);
+        source.sendSuccess(() -> Component.translatable("commands.difficulty.success",
+                difficulty.getDisplayName()), true);
+        return 0;
+    }
+
+    private static int setWorldDifficulty(CommandSourceStack source, ServerLevel level, Difficulty difficulty) {
+        PerWorldLevelData data = level instanceof DynamicServerLevel dynamic ? dynamic.perWorldData() : null;
+        if (data == null || !data.ownDifficulty()) {
+            source.sendFailure(Messages.error("perWorldDifficulty is disabled in the server config."));
+            return 0;
+        }
+        if (data.getDifficulty() == difficulty) {
+            source.sendFailure(Component.translatable("commands.difficulty.failure", difficulty.getKey()));
+            return 0;
+        }
+        MinecraftServer server = source.getServer();
+        data.setDifficulty(difficulty);
+        WorldRegistry.get(server).setDifficulty(WorldRegistry.groupOf(level.dimension()), difficulty);
+        DynamicDimensionManager.applySpawnSettings(server, level, difficulty);
+        var packet = new ClientboundChangeDifficultyPacket(difficulty,
+                server.getWorldData().isDifficultyLocked());
+        for (ServerPlayer player : level.players()) {
+            player.connection.send(packet);
+        }
+        String world = worldName(level);
+        source.sendSuccess(() -> Component.translatable("commands.difficulty.success",
+                difficulty.getDisplayName()).append(Messages.info(" (world '" + world + "')")), true);
+        return 0;
+    }
+
+    private static void reapplyManagedSpawnFlags(MinecraftServer server) {
+        if (!Config.perWorldDifficulty()) {
+            return;
+        }
+        for (ServerLevel level : server.getAllLevels()) {
+            if (level instanceof DynamicServerLevel dynamic
+                    && dynamic.perWorldData() != null && dynamic.perWorldData().ownDifficulty()) {
+                DynamicDimensionManager.applySpawnSettings(server, level, level.getDifficulty());
+            }
+        }
+    }
+
+    /** Explicit world targeting: {@code /wsc difficulty <world> [value]}. */
+    public static LiteralArgumentBuilder<CommandSourceStack> buildWscDifficultyNode() {
+        RequiredArgumentBuilder<CommandSourceStack, String> worldArg =
+                Commands.argument("world", StringArgumentType.word())
+                        .suggests(WorldSuggestions.REGISTERED_WORLDS)
+                        .executes(context -> {
+                            ServerLevel level = resolveWorldLevel(context);
+                            if (level == null) {
+                                return 0;
+                            }
+                            Difficulty difficulty = level.getDifficulty();
+                            String world = worldName(level);
+                            context.getSource().sendSuccess(() -> Component.translatable(
+                                    "commands.difficulty.query", difficulty.getDisplayName())
+                                    .append(Messages.info(" (world '" + world + "')")), false);
+                            return difficulty.getId();
+                        });
+        for (Difficulty value : Difficulty.values()) {
+            worldArg.then(Commands.literal(value.getKey()).executes(context -> {
+                ServerLevel level = resolveWorldLevel(context);
+                return level != null ? setWorldDifficulty(context.getSource(), level, value) : 0;
+            }));
+        }
+        return Commands.literal("difficulty").then(worldArg);
+    }
+
+    /** Resolves the "world" argument to a loaded managed level (no feature-config check). */
+    @Nullable
+    private static ServerLevel resolveWorldLevel(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String name = StringArgumentType.getString(context, "world");
+        WorldRegistry.WorldEntry entry = WorldRegistry.get(source.getServer()).byName(name);
+        if (entry == null) {
+            source.sendFailure(Messages.error("Unknown world: " + name));
+            return null;
+        }
+        ServerLevel level = source.getServer().getLevel(entry.dimensionKey());
+        if (level == null) {
+            source.sendFailure(Messages.error("World '" + entry.name() + "' is unloaded — run ")
+                    .append(Messages.runCommand("/wsc load " + entry.name(), "/wsc load " + entry.name(),
+                            ChatFormatting.YELLOW))
+                    .append(Messages.error(" first.")));
+            return null;
+        }
+        return level;
     }
 
     // ------------------------------------------------------------------ /wsc gamerule <world> …

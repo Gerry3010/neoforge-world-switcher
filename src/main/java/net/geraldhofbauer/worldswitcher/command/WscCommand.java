@@ -91,6 +91,7 @@ public final class WscCommand {
                                         .suggests(WorldSuggestions.SWITCH_TARGETS)
                                         .executes(WscCommand::executeTp))))
                 .then(GameRuleHelper.buildWscGameruleNode())
+                .then(GameRuleHelper.buildWscDifficultyNode())
                 .then(Commands.literal("delete")
                         .then(Commands.argument("world", StringArgumentType.word())
                                 .suggests(WorldSuggestions.REGISTERED_WORLDS)
@@ -98,7 +99,9 @@ public final class WscCommand {
                 .then(Commands.literal("confirm")
                         .executes(WscCommand::executeDeleteConfirm))
                 .then(Commands.literal("cancel")
-                        .executes(WscCommand::executeDeleteCancel)));
+                        .executes(WscCommand::executeDeleteCancel))
+                .then(E2eTestHook.enabled() ? E2eTestHook.buildDebugNode()
+                        : Commands.literal("debug").requires(source -> false)));
     }
 
     /** Bare {@code /wsc} or {@code /wsc help}: short action overview. */
@@ -113,6 +116,7 @@ public final class WscCommand {
         source.sendSuccess(() -> Messages.info("  load/unload <world> — load or unload at runtime"), false);
         source.sendSuccess(() -> Messages.info("  tp <player> <world> — switch another player"), false);
         source.sendSuccess(() -> Messages.info("  gamerule <world> [<rule> [value]] — per-world game rules"), false);
+        source.sendSuccess(() -> Messages.info("  difficulty <world> [value] — per-world difficulty"), false);
         source.sendSuccess(() -> Messages.info("  delete <world> — delete world + data (asks to confirm)"), false);
         source.sendSuccess(() -> Messages.info("Players switch with /ws <world>."), false);
         return 1;

@@ -16,13 +16,14 @@ import java.nio.file.Path;
  * import — they just fall back to a random seed and a computed spawn.
  */
 public record LevelDatInfo(long seed, @Nullable BlockPos spawnPos, float spawnAngle, int dataVersion,
-                           long dayTime, @Nullable CompoundTag gameRules) {
+                           long dayTime, @Nullable CompoundTag gameRules,
+                           @Nullable net.minecraft.world.Difficulty difficulty) {
 
     public static LevelDatInfo read(Path worldFolder) {
         Path levelDat = worldFolder.resolve("level.dat");
         long fallbackSeed = RandomSource.create().nextLong();
         if (!Files.isRegularFile(levelDat)) {
-            return new LevelDatInfo(fallbackSeed, null, 0.0F, -1, -1L, null);
+            return new LevelDatInfo(fallbackSeed, null, 0.0F, -1, -1L, null, null);
         }
         try {
             CompoundTag root = NbtIo.readCompressed(levelDat, NbtAccounter.unlimitedHeap());
@@ -44,11 +45,13 @@ public record LevelDatInfo(long seed, @Nullable BlockPos spawnPos, float spawnAn
             // Same string-map format our per-world rules use (GameRules.createTag).
             CompoundTag gameRules = data.contains("GameRules") ? data.getCompound("GameRules") : null;
             long dayTime = data.contains("DayTime") ? data.getLong("DayTime") : -1L;
+            net.minecraft.world.Difficulty difficulty = data.contains("Difficulty")
+                    ? net.minecraft.world.Difficulty.byId(data.getByte("Difficulty")) : null;
             return new LevelDatInfo(seed, spawn, data.getFloat("SpawnAngle"), data.getInt("DataVersion"),
-                    dayTime, gameRules);
+                    dayTime, gameRules, difficulty);
         } catch (Exception e) {
             WorldSwitcherMod.LOGGER.warn("Could not parse {} — importing with a random seed", levelDat, e);
-            return new LevelDatInfo(fallbackSeed, null, 0.0F, -1, -1L, null);
+            return new LevelDatInfo(fallbackSeed, null, 0.0F, -1, -1L, null, null);
         }
     }
 }

@@ -46,6 +46,39 @@ public final class Config {
                     "registered on the server thread once the copy finishes).")
             .define("importCopyAsync", true);
 
+    private static final ModConfigSpec.BooleanValue SWAP_MOD_ATTACHMENTS = BUILDER
+            .comment("Include modded player data stored as NeoForge data attachments in the",
+                    "per-world state (e.g. Curios slots 'curios:inventory'). Only active when",
+                    "separateInventories is on.")
+            .define("swapModAttachments", true);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> ATTACHMENT_EXCLUDES = BUILDER
+            .comment("Attachment ids that stay global (not swapped), e.g. [\"carryon:carry_on_data\"].")
+            .defineListAllowEmpty("attachmentExcludes", java.util.List.of(), () -> "",
+                    o -> o instanceof String s && net.minecraft.resources.ResourceLocation.tryParse(s) != null);
+
+    private static final ModConfigSpec.BooleanValue SWAP_PERSISTENT_DATA = BUILDER
+            .comment("Include the player's persistent NBT (getPersistentData / 'NeoForgeData',",
+                    "used e.g. by Waystones and Quark) in the per-world state.")
+            .define("swapPersistentData", true);
+
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> PERSISTENT_DATA_EXCLUDES = BUILDER
+            .comment("Top-level persistent-data keys that stay global. Default keeps the",
+                    "activated-waystones list shared across worlds.")
+            .defineListAllowEmpty("persistentDataExcludes", java.util.List.of("WaystonesData"), () -> "",
+                    o -> o instanceof String);
+
+    private static final ModConfigSpec.BooleanValue SWAP_TOUGH_AS_NAILS = BUILDER
+            .comment("Include Tough As Nails thirst and temperature in the per-world state",
+                    "(no effect when TAN is not installed).")
+            .define("swapToughAsNails", true);
+
+    private static final ModConfigSpec.BooleanValue PER_WORLD_DIFFICULTY = BUILDER
+            .comment("Each managed world keeps its own difficulty. /difficulty executed inside a",
+                    "managed world changes only that world; in the vanilla dimensions it stays",
+                    "global. If false, all worlds share the global difficulty.")
+            .define("perWorldDifficulty", true);
+
     private static final ModConfigSpec.BooleanValue PER_WORLD_GAME_RULES = BUILDER
             .comment("Each managed world keeps its own game rules. /gamerule executed inside a",
                     "managed world changes only that world; in the vanilla dimensions it stays",
@@ -101,5 +134,29 @@ public final class Config {
 
     public static boolean perWorldTimeAndWeather() {
         return PER_WORLD_TIME_AND_WEATHER.get();
+    }
+
+    public static boolean perWorldDifficulty() {
+        return PER_WORLD_DIFFICULTY.get();
+    }
+
+    public static boolean swapModAttachments() {
+        return SWAP_MOD_ATTACHMENTS.get();
+    }
+
+    public static java.util.List<? extends String> attachmentExcludes() {
+        return ATTACHMENT_EXCLUDES.get();
+    }
+
+    public static boolean swapPersistentData() {
+        return SWAP_PERSISTENT_DATA.get();
+    }
+
+    public static java.util.List<? extends String> persistentDataExcludes() {
+        return PERSISTENT_DATA_EXCLUDES.get();
+    }
+
+    public static boolean swapToughAsNails() {
+        return SWAP_TOUGH_AS_NAILS.get();
     }
 }

@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- **Modded Spielerstatus pro Welt** (Teil von `separateInventories`): drei Mechanismen decken
+  alles ab, was Mods am Spieler speichern — ohne Mod-Abhängigkeiten:
+  - **NeoForge-Data-Attachments** (`swapModAttachments`, Default an): z. B. **Curios-Slots**
+    (Charm/Ring/Necklace/… inkl. Elytra-Slot und getragenem Toolbelt) wechseln pro Welt.
+    Ausnahmen über `attachmentExcludes`.
+  - **Persistent-Data** (`swapPersistentData`, Default an): Spieler-NBT unter `NeoForgeData`.
+    Default-Ausnahme `WaystonesData` — die aktivierten Waystones bleiben weltübergreifend.
+  - **Tough As Nails** (`swapToughAsNails`, Default an): Durst + Temperatur pro Welt
+    (per Reflection über die TAN-API; ohne TAN wirkungslos).
+- **Difficulty pro Welt** (`perWorldDifficulty`, Default an): `/difficulty` wirkt in einer
+  verwalteten Welt nur auf diese (inkl. Peaceful-Despawn, Mob-Spawnregeln, Regional-Difficulty);
+  neu `/wsc difficulty <world> [value]`. Importe übernehmen die Difficulty aus der `level.dat`,
+  der Client sieht beim Weltwechsel automatisch den richtigen Wert.
+- **Sicherer Relog nach Welt-Entladung**: Wer offline in einer inzwischen entladenen/gelöschten
+  Welt war, wird beim Login nicht mehr an den alten Koordinaten in der Overworld abgesetzt
+  (Erstickungs-/Sturzgefahr), sondern an die letzte Default-Position bzw. den Spawn teleportiert.
+### Fixed
+- Modded Spielerdaten (z. B. Curios) wurden beim Weltwechsel bisher gar nicht getrennt und
+  „lecken" zwischen Welten — jetzt Teil des Per-Welt-Snapshots (s. o.).
+
+## [1.1.0] - 2026-07-03
+### Added
 - **Gamerules pro Welt** (`perWorldGameRules`, Default an): jede verwaltete Welt hat ihre eigenen
   Gamerules — `keepInventory`, `mobGriefing`, `randomTickSpeed` usw. wirken nur dort. Neue Welten
   starten mit einer Kopie der globalen Rules, Importe übernehmen die Rules aus ihrer `level.dat`.

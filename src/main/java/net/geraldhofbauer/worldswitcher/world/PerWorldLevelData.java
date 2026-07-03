@@ -1,5 +1,6 @@
 package net.geraldhofbauer.worldswitcher.world;
 
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.storage.DerivedLevelData;
 import net.minecraft.world.level.storage.ServerLevelData;
@@ -32,11 +33,14 @@ public class PerWorldLevelData extends DerivedLevelData {
     private int thunderTime;
     private boolean raining;
     private boolean thundering;
+    /** Non-null = this world owns its difficulty; null = share the global one (config off). */
+    @Nullable
+    private Difficulty difficulty;
 
     public PerWorldLevelData(WorldData worldData, ServerLevelData wrapped,
                              @Nullable GameRules gameRules, boolean ownTimeAndWeather,
                              long dayTime, int clearWeatherTime, int rainTime, int thunderTime,
-                             boolean raining, boolean thundering) {
+                             boolean raining, boolean thundering, @Nullable Difficulty difficulty) {
         super(worldData, wrapped);
         this.gameRules = gameRules;
         this.ownTimeAndWeather = ownTimeAndWeather;
@@ -46,6 +50,7 @@ public class PerWorldLevelData extends DerivedLevelData {
         this.thunderTime = thunderTime;
         this.raining = raining;
         this.thundering = thundering;
+        this.difficulty = difficulty;
     }
 
     public boolean ownGameRules() {
@@ -54,6 +59,22 @@ public class PerWorldLevelData extends DerivedLevelData {
 
     public boolean ownTimeAndWeather() {
         return ownTimeAndWeather;
+    }
+
+    public boolean ownDifficulty() {
+        return difficulty != null;
+    }
+
+    @Override
+    public Difficulty getDifficulty() {
+        return difficulty != null ? difficulty : super.getDifficulty();
+    }
+
+    /** Not an override — {@code LevelData} has no difficulty setter. No-op when not owned. */
+    public void setDifficulty(Difficulty difficulty) {
+        if (this.difficulty != null) {
+            this.difficulty = difficulty;
+        }
     }
 
     @Override

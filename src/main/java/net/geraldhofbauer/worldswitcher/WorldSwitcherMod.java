@@ -34,6 +34,10 @@ public class WorldSwitcherMod {
         // SERVER config: lives in <save>/serverconfig/, options are per-world-save
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
 
+        if (Boolean.getBoolean(net.geraldhofbauer.worldswitcher.command.E2eTestHook.PROPERTY)) {
+            net.geraldhofbauer.worldswitcher.command.E2eTestHook.register(modEventBus);
+        }
+
         NeoForge.EVENT_BUS.register(this);
         NeoForge.EVENT_BUS.register(net.geraldhofbauer.worldswitcher.player.PlayerStateManager.EVENTS);
 
