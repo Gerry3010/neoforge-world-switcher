@@ -101,6 +101,14 @@ public final class ModdedPlayerState {
             if (!stored.isEmpty()) {
                 deserializeAttachments(player, stored);
             }
+            // Curios initializes its inventory only at entity construction (or lazily after a
+            // pending deserialize) — after our clear, a FRESH default would stay uninitialized
+            // forever: no slots in the curios GUI until relog. Its public reset() re-inits
+            // against the wearer's slot layout for both the fresh and the restored case.
+            if (!Config.attachmentExcludes().contains(CuriosHooks.ATTACHMENT_ID)
+                    && CuriosHooks.available()) {
+                CuriosHooks.resetInventory(player);
+            }
         }
         if (Config.swapPersistentData()) {
             applyPersistentData(player, tag.getCompound(KEY_PERSISTENT));
@@ -268,6 +276,63 @@ public final class ModdedPlayerState {
             available = false;
             WorldSwitcherMod.LOGGER.error("Tough As Nails integration failed at runtime — "
                     + "per-world thirst/temperature disabled", e);
+        }
+    }
+
+    /**
+     * Reflective bridge into Curios' public API ({@code CuriosApi.getCuriosInventory} +
+     * {@code ICuriosItemHandler.reset()}), used to re-initialize the curios inventory after an
+     * attachment swap. Absent Curios = silently off.
+     */
+    private static final class CuriosHooks {
+
+        static final String ATTACHMENT_ID = "curios:inventory";
+
+        private static boolean initialized;
+        private static boolean available;
+
+        private static Method getCuriosInventory;
+        private static Method reset;
+
+        private CuriosHooks() {
+        }
+
+        static synchronized boolean available() {
+            if (!initialized) {
+                initialized = true;
+                try {
+                    Class<?> curiosApi = Class.forName("top.theillusivec4.curios.api.CuriosApi");
+                    getCuriosInventory = curiosApi.getMethod("getCuriosInventory",
+                            net.minecraft.world.entity.LivingEntity.class);
+                    Class<?> handler = Class.forName(
+                            "top.theillusivec4.curios.api.type.capability.ICuriosItemHandler");
+                    reset = handler.getMethod("reset");
+                    available = true;
+                    WorldSwitcherMod.LOGGER.info("Curios detected — re-initializing its slots "
+                            + "after per-world attachment swaps");
+                } catch (ClassNotFoundException e) {
+                    available = false; // Curios not installed — expected
+                } catch (ReflectiveOperationException e) {
+                    available = false;
+                    WorldSwitcherMod.LOGGER.warn("Curios found but its API changed — slot "
+                            + "re-initialization after world switches disabled", e);
+                }
+            }
+            return available;
+        }
+
+        static void resetInventory(ServerPlayer player) {
+            try {
+                java.util.Optional<?> handler =
+                        (java.util.Optional<?>) getCuriosInventory.invoke(null, player);
+                if (handler.isPresent()) {
+                    reset.invoke(handler.get());
+                }
+            } catch (ReflectiveOperationException e) {
+                available = false;
+                WorldSwitcherMod.LOGGER.error("Curios reset failed at runtime — slot "
+                        + "re-initialization after world switches disabled", e);
+            }
         }
     }
 
