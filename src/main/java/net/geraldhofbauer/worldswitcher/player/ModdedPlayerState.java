@@ -101,11 +101,17 @@ public final class ModdedPlayerState {
             if (!stored.isEmpty()) {
                 deserializeAttachments(player, stored);
             }
-            // Curios initializes its inventory only at entity construction (or lazily after a
-            // pending deserialize) — after our clear, a FRESH default would stay uninitialized
-            // forever: no slots in the curios GUI until relog. Its public reset() re-inits
-            // against the wearer's slot layout for both the fresh and the restored case.
-            if (!Config.attachmentExcludes().contains(CuriosHooks.ATTACHMENT_ID)
+            // Curios initializes its inventory only at entity construction or lazily after a
+            // pending deserialize (markDeserialized). Two cases after our swap:
+            // - restored data: markDeserialized is set — Curios' own capability wrapper inits
+            //   it on the next access (before its join sync). Calling reset() here TOO would
+            //   init a second time, and init() starts with curios.clear() after the pending
+            //   data was already consumed — wiping the just-restored items.
+            // - fresh (cleared, nothing deserialized): the default CurioInventory would stay
+            //   uninitialized forever (no slots in the GUI until relog) — reset() rebuilds the
+            //   empty slot layout.
+            if (!stored.contains(CuriosHooks.ATTACHMENT_ID)
+                    && !Config.attachmentExcludes().contains(CuriosHooks.ATTACHMENT_ID)
                     && CuriosHooks.available()) {
                 CuriosHooks.resetInventory(player);
             }
