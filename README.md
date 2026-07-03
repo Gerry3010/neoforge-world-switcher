@@ -83,9 +83,8 @@ spawn.
   e.g. the whole **Curios** inventory (charm/ring/necklace/… slots, incl. Elytra Slot and a
   worn toolbelt). Exclude ids via `attachmentExcludes` (e.g. `["carryon:carry_on_data"]`).
 - **Persistent player NBT** (`swapPersistentData`, the `NeoForgeData` tag): used e.g. by
-  Waystones and Quark. `persistentDataExcludes` defaults to `["WaystonesData"]`, so the
-  activated-waystones list stays shared across worlds — teleporting through a waystone into
-  another world swaps the player state like a portal would.
+  Waystones and Quark. Individual keys can be kept out of the swap via
+  `persistentDataExcludes` (default: `["WaystonesData"]`).
 - **Tough As Nails** (`swapToughAsNails`): thirst and temperature per world (TAN stores them
   outside the two mechanisms above; integrated via its API, inactive without TAN).
 

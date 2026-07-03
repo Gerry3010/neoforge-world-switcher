@@ -4,15 +4,15 @@ All notable changes to World Switcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-07-03
 ### Added
 - **Modded Spielerstatus pro Welt** (Teil von `separateInventories`): drei Mechanismen decken
   alles ab, was Mods am Spieler speichern — ohne Mod-Abhängigkeiten:
   - **NeoForge-Data-Attachments** (`swapModAttachments`, Default an): z. B. **Curios-Slots**
     (Charm/Ring/Necklace/… inkl. Elytra-Slot und getragenem Toolbelt) wechseln pro Welt.
     Ausnahmen über `attachmentExcludes`.
-  - **Persistent-Data** (`swapPersistentData`, Default an): Spieler-NBT unter `NeoForgeData`.
-    Default-Ausnahme `WaystonesData` — die aktivierten Waystones bleiben weltübergreifend.
+  - **Persistent-Data** (`swapPersistentData`, Default an): Spieler-NBT unter `NeoForgeData`;
+    einzelne Keys per `persistentDataExcludes` ausnehmbar (Default: `WaystonesData`).
   - **Tough As Nails** (`swapToughAsNails`, Default an): Durst + Temperatur pro Welt
     (per Reflection über die TAN-API; ohne TAN wirkungslos).
 - **Difficulty pro Welt** (`perWorldDifficulty`, Default an): `/difficulty` wirkt in einer
