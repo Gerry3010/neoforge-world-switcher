@@ -29,7 +29,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build with Gradle
-        run: ./gradlew build --no-daemon
+        # tee to a shared log for pipepush; GitHub's shell has pipefail on by
+        # default, so a Gradle failure still fails the step.
+        run: ./gradlew build --no-daemon 2>&1 | tee -a "$RUNNER_TEMP/pipepush.log"
 
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
@@ -42,9 +44,12 @@ jobs:
         if: always()                 # notify on success AND failure
         run: |
           if [ -z "$PIPEPUSH_TOKEN" ]; then echo "PIPEPUSH_TOKEN not set — skipping notify"; exit 0; fi
-          curl -sf -X POST "$PIPEPUSH_SERVER/api/webhook" \
-            -H "Content-Type: application/json" \
-            -d "{\"token\":\"$PIPEPUSH_TOKEN\",\"status\":\"${{ job.status }}\",\"pipeline\":\"$GITHUB_WORKFLOW\",\"branch\":\"$GITHUB_REF_NAME\",\"commit\":\"$GITHUB_SHA\",\"runId\":\"$GITHUB_RUN_NUMBER\"}"
+          LOGS=$(tail -c 16000 "$RUNNER_TEMP/pipepush.log" 2>/dev/null || true)
+          jq -nc --arg token "$PIPEPUSH_TOKEN" --arg status "${{ job.status }}" \
+            --arg pipeline "$GITHUB_WORKFLOW" --arg branch "$GITHUB_REF_NAME" \
+            --arg commit "$GITHUB_SHA" --arg runId "$GITHUB_RUN_NUMBER" --arg logs "$LOGS" \
+            '{token:$token,status:$status,pipeline:$pipeline,branch:$branch,commit:$commit,runId:$runId,logs:$logs}' \
+            | curl -sf -X POST "$PIPEPUSH_SERVER/api/webhook" -H "Content-Type: application/json" -d @-
         env:
           PIPEPUSH_TOKEN: ${{ secrets.PIPEPUSH_TOKEN }}
           PIPEPUSH_SERVER: ${{ vars.PIPEPUSH_SERVER }}
