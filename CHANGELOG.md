@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **Geteiltes Inventar pro Welt** (`/wsc shareinventory <world> [true|false]`): eine Welt kann
+  als „keep-inventory" markiert werden — sie nutzt dann die `default`-Inventargruppe statt einer
+  eigenen, d. h. Spieler behalten beim Betreten ihre Default-Welt-Items (kein separates
+  Welt-Inventar). Nur der Spielerzustand wird geteilt — Gamerules, Zeit, Wetter und Difficulty
+  bleiben pro Welt. Umschalten während Spieler drin sind gruppiert sie an Ort und Stelle um (der
+  vorherige Zustand bleibt für ein Zurückschalten erhalten; modded Client-HUDs wie Curios können
+  bis zum nächsten Relog nachhinken). `/wsc list` markiert solche Welten mit `keep-inv`, `/wsc
+  info` zeigt den Status. (Erster Schritt Richtung frei konfigurierbarer Weltgruppen.)
 ### Changed
 - `persistentDataExcludes` ist jetzt standardmäßig leer (die `WaystonesData`-Ausnahme brachte
   in der Praxis nichts — Waystones verhalten sich ohnehin pro Welt).

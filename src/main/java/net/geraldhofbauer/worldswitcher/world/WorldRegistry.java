@@ -59,6 +59,12 @@ public class WorldRegistry extends SavedData {
         /** Per-world difficulty; null = not owned yet (inherits the global one on first load). */
         @Nullable
         private net.minecraft.world.Difficulty difficulty;
+        /**
+         * When true this world uses the {@value #DEFAULT_GROUP} inventory group instead of its own —
+         * players keep their default-world items here (no separate per-world inventory). Game rules,
+         * time, weather and difficulty stay per-world regardless.
+         */
+        private boolean shareDefaultInventory;
         /** Live level data while the world is loaded — the registry serializes from it. */
         @Nullable
         private PerWorldLevelData liveData;
@@ -142,6 +148,11 @@ public class WorldRegistry extends SavedData {
             return difficulty;
         }
 
+        /** True if this world shares the {@value #DEFAULT_GROUP} inventory group (keep-inventory). */
+        public boolean sharesDefaultInventory() {
+            return shareDefaultInventory;
+        }
+
         void attachLiveData(PerWorldLevelData data) {
             this.liveData = data;
         }
@@ -214,6 +225,7 @@ public class WorldRegistry extends SavedData {
             if (entryTag.contains("difficulty")) {
                 entry.difficulty = net.minecraft.world.Difficulty.byName(entryTag.getString("difficulty"));
             }
+            entry.shareDefaultInventory = entryTag.getBoolean("shareDefaultInventory");
             registry.entries.put(entry.id(), entry);
         }
         return registry;
@@ -249,6 +261,7 @@ public class WorldRegistry extends SavedData {
             if (entry.difficulty != null) {
                 entryTag.putString("difficulty", entry.difficulty.getKey());
             }
+            entryTag.putBoolean("shareDefaultInventory", entry.shareDefaultInventory);
             list.add(entryTag);
         }
         tag.put("worlds", list);
@@ -334,6 +347,17 @@ public class WorldRegistry extends SavedData {
         }
     }
 
+    /** Toggles whether a world shares the default inventory group. Returns true if it changed. */
+    public boolean setShareDefaultInventory(String id, boolean share) {
+        WorldEntry entry = entries.get(id);
+        if (entry != null && entry.shareDefaultInventory != share) {
+            entry.shareDefaultInventory = share;
+            setDirty();
+            return true;
+        }
+        return false;
+    }
+
     public void setSpawn(String id, BlockPos pos, float angle) {
         WorldEntry entry = entries.get(id);
         if (entry != null) {
@@ -350,5 +374,20 @@ public class WorldRegistry extends SavedData {
     public static String groupOf(ResourceKey<Level> dimension) {
         ResourceLocation location = dimension.location();
         return NAMESPACE.equals(location.getNamespace()) ? location.getPath() : DEFAULT_GROUP;
+    }
+
+    /**
+     * Inventory group of a dimension, honouring the per-world {@code shareDefaultInventory} flag:
+     * a flagged world reports the {@value #DEFAULT_GROUP} group so players keep their default-world
+     * items there. Unlike {@link #groupOf}, this is only about player-state grouping — game rules,
+     * time, weather and difficulty stay keyed by the world's own id.
+     */
+    public static String inventoryGroupOf(MinecraftServer server, ResourceKey<Level> dimension) {
+        String group = groupOf(dimension);
+        if (DEFAULT_GROUP.equals(group)) {
+            return group;
+        }
+        WorldEntry entry = get(server).byId(group);
+        return entry != null && entry.sharesDefaultInventory() ? DEFAULT_GROUP : group;
     }
 }

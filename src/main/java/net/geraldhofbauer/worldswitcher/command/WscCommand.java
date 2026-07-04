@@ -1,11 +1,13 @@
 package net.geraldhofbauer.worldswitcher.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.geraldhofbauer.worldswitcher.WorldSwitcherMod;
+import net.geraldhofbauer.worldswitcher.player.PlayerStateManager;
 import net.geraldhofbauer.worldswitcher.util.Messages;
 import net.geraldhofbauer.worldswitcher.world.DynamicDimensionManager;
 import net.geraldhofbauer.worldswitcher.world.ImportService;
@@ -92,6 +94,12 @@ public final class WscCommand {
                                         .executes(WscCommand::executeTp))))
                 .then(GameRuleHelper.buildWscGameruleNode())
                 .then(GameRuleHelper.buildWscDifficultyNode())
+                .then(Commands.literal("shareinventory")
+                        .then(Commands.argument("world", StringArgumentType.word())
+                                .suggests(WorldSuggestions.REGISTERED_WORLDS)
+                                .executes(WscCommand::executeShareInventoryQuery)
+                                .then(Commands.argument("value", BoolArgumentType.bool())
+                                        .executes(WscCommand::executeShareInventorySet))))
                 .then(Commands.literal("delete")
                         .then(Commands.argument("world", StringArgumentType.word())
                                 .suggests(WorldSuggestions.REGISTERED_WORLDS)
@@ -117,6 +125,7 @@ public final class WscCommand {
         source.sendSuccess(() -> Messages.info("  tp <player> <world> — switch another player"), false);
         source.sendSuccess(() -> Messages.info("  gamerule <world> [<rule> [value]] — per-world game rules"), false);
         source.sendSuccess(() -> Messages.info("  difficulty <world> [value] — per-world difficulty"), false);
+        source.sendSuccess(() -> Messages.info("  shareinventory <world> [true|false] — keep default items here (shared inventory)"), false);
         source.sendSuccess(() -> Messages.info("  delete <world> — delete world + data (asks to confirm)"), false);
         source.sendSuccess(() -> Messages.info("Players switch with /ws <world>."), false);
         return 1;
@@ -169,6 +178,9 @@ public final class WscCommand {
                 line.append(Component.literal("  " + playerCount + " player" + (playerCount == 1 ? "" : "s"))
                         .withStyle(ChatFormatting.GRAY));
             }
+            if (entry.sharesDefaultInventory()) {
+                line.append(Component.literal("  keep-inv").withStyle(ChatFormatting.GRAY));
+            }
             if (entry.id().equals(currentGroup)) {
                 line.append(Component.literal("  (you are here)").withStyle(ChatFormatting.YELLOW));
             }
@@ -202,9 +214,42 @@ public final class WscCommand {
         source.sendSuccess(() -> Messages.info("  spawn: "
                 + (entry.spawnPos() != null ? entry.spawnPos().toShortString() : "not set")), false);
         source.sendSuccess(() -> Messages.info("  folder: " + dimensionPath + " (" + formatSize(diskSize) + ")"), false);
+        source.sendSuccess(() -> Messages.info("  inventory: " + (entry.sharesDefaultInventory()
+                ? "shared with default (keep-inventory)" : "separate (own group)")), false);
         if (!entry.sourcePath().isEmpty()) {
             source.sendSuccess(() -> Messages.info("  imported from: " + entry.sourcePath()), false);
         }
+        return 1;
+    }
+
+    private static int executeShareInventoryQuery(CommandContext<CommandSourceStack> context) {
+        WorldRegistry.WorldEntry entry = resolveWorld(context);
+        if (entry == null) {
+            return 0;
+        }
+        context.getSource().sendSuccess(() -> Messages.info("World '" + entry.name() + "' inventory: "
+                + (entry.sharesDefaultInventory()
+                        ? "shared with default (keep-inventory)" : "separate (own group)")), false);
+        return 1;
+    }
+
+    private static int executeShareInventorySet(CommandContext<CommandSourceStack> context) {
+        WorldRegistry.WorldEntry entry = resolveWorld(context);
+        if (entry == null) {
+            return 0;
+        }
+        CommandSourceStack source = context.getSource();
+        MinecraftServer server = source.getServer();
+        boolean value = BoolArgumentType.getBool(context, "value");
+        if (WorldRegistry.get(server).setShareDefaultInventory(entry.id(), value)) {
+            // Re-group players standing in the world so the flip can't corrupt the default group.
+            PlayerStateManager.onInventoryGroupChanged(server, entry.id());
+        }
+        source.sendSuccess(() -> value
+                ? Messages.success("World ").append(Messages.highlight(entry.name()))
+                        .append(Messages.info(" now shares the default inventory — players keep their items here."))
+                : Messages.success("World ").append(Messages.highlight(entry.name()))
+                        .append(Messages.info(" now keeps its own separate inventory again.")), true);
         return 1;
     }
 

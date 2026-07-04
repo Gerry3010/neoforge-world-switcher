@@ -69,8 +69,8 @@ public final class PlayerStateManager {
             if (!(event.getEntity() instanceof ServerPlayer player) || SWITCHING.contains(player.getUUID())) {
                 return;
             }
-            String fromGroup = WorldRegistry.groupOf(player.level().dimension());
-            String toGroup = WorldRegistry.groupOf(event.getDimension());
+            String fromGroup = WorldRegistry.inventoryGroupOf(player.server, player.level().dimension());
+            String toGroup = WorldRegistry.inventoryGroupOf(player.server, event.getDimension());
             if (fromGroup.equals(toGroup) || !Config.separateInventories()) {
                 return;
             }
@@ -120,8 +120,9 @@ public final class PlayerStateManager {
                 return;
             }
             PendingCross pending = PENDING_CROSS.remove(player.getUUID());
-            String fromGroup = pending != null ? pending.fromGroup() : WorldRegistry.groupOf(event.getFrom());
-            String toGroup = WorldRegistry.groupOf(event.getTo());
+            String fromGroup = pending != null
+                    ? pending.fromGroup() : WorldRegistry.inventoryGroupOf(player.server, event.getFrom());
+            String toGroup = WorldRegistry.inventoryGroupOf(player.server, event.getTo());
             PlayerStateStore store = PlayerStateStore.get(player.server);
             if (fromGroup.equals(toGroup)) {
                 return;
@@ -165,7 +166,7 @@ public final class PlayerStateManager {
                 return;
             }
             PlayerStateStore store = PlayerStateStore.get(player.server);
-            String actualGroup = WorldRegistry.groupOf(level.dimension());
+            String actualGroup = WorldRegistry.inventoryGroupOf(player.server, level.dimension());
             String trackedGroup = store.getCurrentGroup(player.getUUID());
             if (trackedGroup.isEmpty() || trackedGroup.equals(actualGroup)) {
                 return;
@@ -183,7 +184,7 @@ public final class PlayerStateManager {
                 return;
             }
             PlayerStateStore store = PlayerStateStore.get(player.server);
-            String actualGroup = WorldRegistry.groupOf(player.level().dimension());
+            String actualGroup = WorldRegistry.inventoryGroupOf(player.server, player.level().dimension());
             String trackedGroup = store.getCurrentGroup(player.getUUID());
             if (trackedGroup.isEmpty()) {
                 store.setCurrentGroup(player.getUUID(), actualGroup);
@@ -222,7 +223,7 @@ public final class PlayerStateManager {
                     ? PlayerSnapshot.StoredPosition.from(stored) : null;
             ServerLevel lastPosLevel = lastPos != null ? resolveLevel(server, lastPos.dimension()) : null;
             if (lastPosLevel != null
-                    && WorldRegistry.groupOf(lastPosLevel.dimension()).equals(actualGroup)) {
+                    && WorldRegistry.inventoryGroupOf(server, lastPosLevel.dimension()).equals(actualGroup)) {
                 teleportGuarded(player, lastPosLevel, lastPos.x(), lastPos.y(), lastPos.z(),
                         lastPos.yaw(), lastPos.pitch());
             } else {
@@ -283,7 +284,7 @@ public final class PlayerStateManager {
                 return;
             }
             PlayerStateStore store = PlayerStateStore.get(player.server);
-            String respawnGroup = WorldRegistry.groupOf(player.serverLevel().dimension());
+            String respawnGroup = WorldRegistry.inventoryGroupOf(player.server, player.serverLevel().dimension());
             String previousGroup = store.getCurrentGroup(player.getUUID());
             if (previousGroup.isEmpty() || previousGroup.equals(respawnGroup)) {
                 return;
@@ -307,7 +308,7 @@ public final class PlayerStateManager {
                 return;
             }
             PlayerStateStore store = PlayerStateStore.get(player.server);
-            String respawnGroup = WorldRegistry.groupOf(player.level().dimension());
+            String respawnGroup = WorldRegistry.inventoryGroupOf(player.server, player.level().dimension());
             String previousGroup = store.getCurrentGroup(player.getUUID());
             if (previousGroup.isEmpty() || previousGroup.equals(respawnGroup)) {
                 return;
@@ -338,8 +339,8 @@ public final class PlayerStateManager {
     /** Switches a player to another world group, swapping player state if configured. */
     public static void switchPlayer(ServerPlayer player, ServerLevel target) {
         MinecraftServer server = target.getServer();
-        String fromGroup = WorldRegistry.groupOf(player.level().dimension());
-        String toGroup = WorldRegistry.groupOf(target.dimension());
+        String fromGroup = WorldRegistry.inventoryGroupOf(server, player.level().dimension());
+        String toGroup = WorldRegistry.inventoryGroupOf(server, target.dimension());
         PlayerStateStore store = PlayerStateStore.get(server);
         boolean separate = Config.separateInventories();
 
@@ -372,7 +373,7 @@ public final class PlayerStateManager {
         PlayerSnapshot.StoredPosition lastPos = stored != null && Config.restoreLastPosition()
                 ? PlayerSnapshot.StoredPosition.from(stored) : null;
         ServerLevel lastPosLevel = lastPos != null ? resolveLevel(server, lastPos.dimension()) : null;
-        if (lastPosLevel != null && WorldRegistry.groupOf(lastPosLevel.dimension()).equals(toGroup)) {
+        if (lastPosLevel != null && WorldRegistry.inventoryGroupOf(server, lastPosLevel.dimension()).equals(toGroup)) {
             // For the default group this may be the nether/end — return exactly where they left.
             destLevel = lastPosLevel;
             x = lastPos.x();
@@ -407,6 +408,46 @@ public final class PlayerStateManager {
             }
         }
         store.setCurrentGroup(player.getUUID(), toGroup);
+    }
+
+    /**
+     * Re-groups online players standing in a world whose {@code shareDefaultInventory} flag just
+     * changed: their inventory group flips, so swap their live player state to the new group's
+     * stored snapshot in place — no teleport, they stay put, the old group's state is preserved
+     * for a possible flip back. Rare admin operation; modded client views (e.g. the Curios HUD)
+     * may lag until the next relog.
+     */
+    public static void onInventoryGroupChanged(MinecraftServer server, String worldId) {
+        if (!Config.separateInventories()) {
+            return;
+        }
+        PlayerStateStore store = PlayerStateStore.get(server);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (!WorldRegistry.groupOf(player.level().dimension()).equals(worldId)) {
+                continue;
+            }
+            String newGroup = WorldRegistry.inventoryGroupOf(server, player.level().dimension());
+            String tracked = store.getCurrentGroup(player.getUUID());
+            if (tracked.isEmpty()) {
+                store.setCurrentGroup(player.getUUID(), newGroup);
+                continue;
+            }
+            if (tracked.equals(newGroup)) {
+                continue;
+            }
+            CompoundTag oldSnapshot = PlayerSnapshot.capture(player);
+            store.putSnapshot(player.getUUID(), tracked, oldSnapshot);
+            CompoundTag stored = store.getSnapshot(player.getUUID(), newGroup);
+            if (stored != null) {
+                PlayerSnapshot.apply(player, stored);
+            } else {
+                PlayerSnapshot.applyFresh(player);
+            }
+            if (ModdedPlayerState.anyEnabled()) {
+                applyModded(player, stored);
+            }
+            store.setCurrentGroup(player.getUUID(), newGroup);
+        }
     }
 
     /** Applies the modded portion of a snapshot, or modded defaults when none is stored. */

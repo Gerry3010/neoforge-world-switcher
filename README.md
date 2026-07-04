@@ -32,6 +32,7 @@ group (overworld/nether/end) and always available. Tab completion lists all worl
 | `tp <player> <world>` | Switch another player |
 | `gamerule <world> [<rule> [value]]` | Per-world game rules; without a rule, lists this world's overrides |
 | `difficulty <world> [value]` | Per-world difficulty |
+| `shareinventory <world> [true\|false]` | World shares the `default` inventory group (keep your items here); without a value, shows the current setting |
 | `delete <world>` | Delete world + data + stored inventories (asks for confirmation) |
 
 ### Per-world game rules, time, weather and difficulty
@@ -76,6 +77,16 @@ With `separateInventories = true` (default), each world keeps its own player sta
 inventory, ender chest, XP, health, hunger, potion effects, game mode and last position. The
 vanilla dimensions count as one group `default`. First visit to a world = fresh start at its
 spawn.
+
+### Shared inventory (keep-inventory worlds)
+
+A world can be flagged to use the `default` inventory group instead of its own —
+`/wsc shareinventory <world> true`. Players then **keep their default-world items** when they
+enter it (no separate per-world inventory), and changes there flow back to the default group. Only
+player state is shared: game rules, time, weather and difficulty stay per-world. Flip it back with
+`/wsc shareinventory <world> false` (the world's own inventory returns; a fresh one on first
+visit). Toggling while players are inside re-groups them in place — their previous state is kept
+for a flip back, but modded client views like the Curios HUD may lag until the next relog.
 
 **Modded player state** is included too — dependency-free, three mechanisms:
 
