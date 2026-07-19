@@ -56,3 +56,6 @@ test-server/eula.txt
 # local repro/debug server
 repro-server/
 test-server/config/*.toml.bak
+
+# junie session/plan files
+.junie/
