@@ -81,6 +81,7 @@ public final class WsCommand {
             }
             PlayerStateManager.switchPlayer(player, server.overworld());
             source.sendSuccess(() -> Messages.success("Switched to ").append(Messages.highlight("default")), true);
+            announceSwitch(server, player, WorldRegistry.DEFAULT_GROUP, "/ws " + WorldRegistry.DEFAULT_GROUP);
             return 1;
         }
 
@@ -108,6 +109,28 @@ public final class WsCommand {
 
         PlayerStateManager.switchPlayer(player, target);
         source.sendSuccess(() -> Messages.success("Switched to ").append(Messages.highlight(entry.name())), true);
+        announceSwitch(server, player, entry.name(), "/ws " + entry.name());
         return 1;
+    }
+
+    /**
+     * Announces a completed switch to every other online player with a clickable world name
+     * ({@code /ws <world>}) so they can follow. No-op when {@code announceSwitches} is off.
+     */
+    private static void announceSwitch(MinecraftServer server, ServerPlayer player,
+                                       String worldLabel, String joinCommand) {
+        if (!Config.announceSwitches()) {
+            return;
+        }
+        var message = net.minecraft.network.chat.Component.empty()
+                .append(player.getDisplayName())
+                .append(Messages.info(" switched to "))
+                .append(Messages.runCommand(worldLabel, joinCommand, net.minecraft.ChatFormatting.AQUA))
+                .append(Messages.info(" — click to join"));
+        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
+            if (!online.getUUID().equals(player.getUUID())) {
+                online.sendSystemMessage(message);
+            }
+        }
     }
 }

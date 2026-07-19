@@ -34,6 +34,7 @@ group (overworld/nether/end) and always available. Tab completion lists all worl
 | `difficulty <world> [value]` | Per-world difficulty |
 | `shareinventory <world> [true\|false]` | World shares the `default` inventory group (keep your items here); without a value, shows the current setting |
 | `delete <world>` | Delete world + data + stored inventories (asks for confirmation) |
+| `hooks [status\|reload]` | Command hooks: `status` (default) shows the configured hooks, `reload` re-reads the JSON file live |
 
 ### Per-world game rules, time, weather and difficulty
 
@@ -109,6 +110,103 @@ Handled edge cases:
 - **World deleted/unloaded while you were offline in it**: on login you're reconciled into the
   overworld with your default state.
 
+## Command hooks
+
+Run admin-defined commands automatically on world events — for example enforce a game mode when a
+player enters your creative world, broadcast a message, or reset an empty world. Hooks live in a
+separate JSON file per world save: `world/serverconfig/worldswitcher-hooks.json` (an inert,
+commented example is generated on first server start). Toggle the whole system with
+`enableCommandHooks` (default on).
+
+**Events** (world identity uses the World Switcher grouping — the vanilla overworld/nether/end are
+one world `default`, each managed world is its own; an overworld→nether portal does **not** count
+as a move):
+
+| Event (JSON key) | Fires when |
+|---|---|
+| `firstPlayerJoin` | A world goes from 0 to 1 players (the first player enters it) |
+| `lastPlayerLeave` | A world goes from 1 to 0 players (the last player leaves it) |
+| `playerMoved` | A player switches world (source world ≠ destination world) |
+
+**Variables** substituted in every command: `{{worldName}}`, `{{worldId}}` (the id or `default`),
+`{{playerName}}`, `{{playerUuid}}`.
+
+**Run-as** — each hook may set `"as": "server"` or `"as": "player"`; without it the global
+`hookDefaultRunAs` (default `server`) applies. `server` runs at OP level 4 with output suppressed,
+positioned at the world; `player` runs as the triggering player, bound by their own permission
+level. A hook is written either as a plain command string or as `{ "command": "...", "as": "..." }`.
+
+On each trigger, **global** hooks run first, then the matching **per-world** hooks. On a switch
+A → B the order is: `lastPlayerLeave` of A (if it emptied), `firstPlayerJoin` of B (if it was
+empty), then `playerMoved` of B (variables = destination). Failing commands are logged and never
+interrupt the switch/login/logout. Edit the file and apply it live with `/wsc hooks reload`.
+
+```json
+{
+  "global": {
+    "playerMoved": ["title {{playerName}} title {\"text\":\"{{worldName}}\"}"]
+  },
+  "worlds": {
+    "creative": {
+      "firstPlayerJoin": ["say The creative world just opened up!"],
+      "playerMoved": [{ "command": "gamemode creative {{playerName}}", "as": "server" }],
+      "lastPlayerLeave": ["weather clear"]
+    },
+    "default": {
+      "playerMoved": [{ "command": "gamemode survival {{playerName}}", "as": "server" }]
+    }
+  }
+}
+```
+
+### Example: pause the day/night cycle when a world is empty
+
+A common request is to only let time advance while someone is actually in a world — the sun
+"freezes" as soon as the last player leaves and "resumes" when the first player comes back. Wire
+the `doDaylightCycle` game rule to `firstPlayerJoin`/`lastPlayerLeave`. Shown here for the vanilla
+`default` world (overworld/nether/end), but it works the same for any managed world by using its
+id instead of `default`:
+
+```json
+{
+  "worlds": {
+    "default": {
+      "firstPlayerJoin": [{ "command": "gamerule doDaylightCycle true", "as": "server" }],
+      "lastPlayerLeave": [{ "command": "gamerule doDaylightCycle false", "as": "server" }]
+    }
+  }
+}
+```
+
+`firstPlayerJoin` fires when the world goes from 0 → 1 players (resume time) and `lastPlayerLeave`
+when it goes 1 → 0 (stop time), so the cycle only ever runs while the world is occupied. Because
+the hook runs `as: server` positioned at the world, the game rule is applied to that world
+(honouring `perWorldTimeAndWeather`). You can freeze more than just the sun by adding
+`gamerule doWeatherCycle false` / `true` and `gamerule randomTickSpeed 0` / `3` alongside it.
+
+If you run [Serene Seasons](https://modrinth.com/mod/serene-seasons), it adds a `doSeasonCycle`
+game rule that behaves the same way, so you can pause the seasonal cycle for empty worlds too — just
+add `gamerule doSeasonCycle false` / `true` next to the others:
+
+```json
+{
+  "worlds": {
+    "default": {
+      "firstPlayerJoin": [
+        { "command": "gamerule doDaylightCycle true", "as": "server" },
+        { "command": "gamerule doWeatherCycle true", "as": "server" },
+        { "command": "gamerule doSeasonCycle true", "as": "server" }
+      ],
+      "lastPlayerLeave": [
+        { "command": "gamerule doDaylightCycle false", "as": "server" },
+        { "command": "gamerule doWeatherCycle false", "as": "server" },
+        { "command": "gamerule doSeasonCycle false", "as": "server" }
+      ]
+    }
+  }
+}
+```
+
 ## Config (`world/serverconfig/worldswitcher-server.toml`)
 
 | Option | Default | Description |
@@ -129,6 +227,9 @@ Handled edge cases:
 | `swapPersistentData` | `true` | Persistent player NBT (`NeoForgeData`) is per-world state |
 | `persistentDataExcludes` | `[]` | Persistent-data keys that stay global |
 | `swapToughAsNails` | `true` | Tough As Nails thirst/temperature are per-world state |
+| `announceSwitches` | `true` | Broadcast a clickable "player switched to X" message so others can click to follow |
+| `enableCommandHooks` | `true` | Master toggle for the command-hook system (see [Command hooks](#command-hooks)) |
+| `hookDefaultRunAs` | `server` | Default run-as for hooks without their own `as` (`server` = OP 4, `player` = own perms) |
 
 ## Known behavior
 

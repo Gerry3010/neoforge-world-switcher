@@ -40,6 +40,7 @@ public class WorldSwitcherMod {
 
         NeoForge.EVENT_BUS.register(this);
         NeoForge.EVENT_BUS.register(net.geraldhofbauer.worldswitcher.player.PlayerStateManager.EVENTS);
+        NeoForge.EVENT_BUS.register(net.geraldhofbauer.worldswitcher.hooks.CommandHookService.EVENTS);
 
         LOGGER.info("World Switcher initialized");
     }
@@ -56,6 +57,7 @@ public class WorldSwitcherMod {
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         DynamicDimensionManager.loadPersistedWorlds(event.getServer());
+        net.geraldhofbauer.worldswitcher.hooks.CommandHookService.load(event.getServer());
     }
 
     @SubscribeEvent

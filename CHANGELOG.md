@@ -4,8 +4,24 @@ All notable changes to World Switcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.4.0] - 2026-07-19
 ### Added
+- **Command-Hooks** (`enableCommandHooks`, Default an): Admins können in
+  `serverconfig/worldswitcher-hooks.json` pro Welt und global Befehlslisten hinterlegen, die
+  automatisch bei drei Welt-Events laufen — `firstPlayerJoin` (Welt geht 0 → 1 Spieler),
+  `lastPlayerLeave` (1 → 0) und `playerMoved` (ein Spieler wechselt die Welt). In jedem Befehl
+  werden `{{worldName}}`, `{{worldId}}`, `{{playerName}}` und `{{playerUuid}}` ersetzt. Welt-Identität
+  folgt der World-Switcher-Gruppierung (Overworld/Nether/End = eine Welt `default`, jede verwaltete
+  Welt eigen; ein Overworld→Nether-Portal zählt nicht als Wechsel). Globale Hooks laufen vor den
+  Welt-Hooks. Jeder Hook läuft wahlweise als Server (`as: server`, OP 4, Ausgabe unterdrückt, an
+  der Welt positioniert) oder als auslösender Spieler (`as: player`); ohne Angabe greift
+  `hookDefaultRunAs` (Default `server`). Fehlerhafte Befehle werden geloggt und unterbrechen den
+  Wechsel/Login/Logout nie. Eine kommentierte Beispiel-Datei wird beim ersten Start erzeugt; mit
+  `/wsc hooks reload` lässt sich die Datei live neu laden (`/wsc hooks status` zeigt die Zählung).
+- **Klickbare Switch-Ankündigung** (`announceSwitches`, Default an): wechselt ein Spieler die
+  Welt (`/ws` oder `/wsc tp`), sehen alle anderen Online-Spieler eine Chat-Meldung „<Spieler>
+  switched to <Welt>" — der Weltname ist ein klickbarer `/ws <welt>`-Link, sodass sie mit einem
+  Klick nachjoinen können. Über `announceSwitches = false` abschaltbar.
 - **Geteiltes Inventar pro Welt** (`/wsc shareinventory <world> [true|false]`): eine Welt kann
   als „keep-inventory" markiert werden — sie nutzt dann die `default`-Inventargruppe statt einer
   eigenen, d. h. Spieler behalten beim Betreten ihre Default-Welt-Items (kein separates

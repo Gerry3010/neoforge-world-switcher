@@ -6,7 +6,10 @@ import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.geraldhofbauer.worldswitcher.Config;
 import net.geraldhofbauer.worldswitcher.WorldSwitcherMod;
+import net.geraldhofbauer.worldswitcher.hooks.CommandHookService;
+import net.geraldhofbauer.worldswitcher.hooks.CommandHooksConfig;
 import net.geraldhofbauer.worldswitcher.player.PlayerStateManager;
 import net.geraldhofbauer.worldswitcher.util.Messages;
 import net.geraldhofbauer.worldswitcher.world.DynamicDimensionManager;
@@ -108,6 +111,12 @@ public final class WscCommand {
                         .executes(WscCommand::executeDeleteConfirm))
                 .then(Commands.literal("cancel")
                         .executes(WscCommand::executeDeleteCancel))
+                .then(Commands.literal("hooks")
+                        .executes(WscCommand::executeHooksStatus)
+                        .then(Commands.literal("status")
+                                .executes(WscCommand::executeHooksStatus))
+                        .then(Commands.literal("reload")
+                                .executes(WscCommand::executeHooksReload)))
                 .then(E2eTestHook.enabled() ? E2eTestHook.buildDebugNode()
                         : Commands.literal("debug").requires(source -> false)));
     }
@@ -127,7 +136,36 @@ public final class WscCommand {
         source.sendSuccess(() -> Messages.info("  difficulty <world> [value] — per-world difficulty"), false);
         source.sendSuccess(() -> Messages.info("  shareinventory <world> [true|false] — keep default items here (shared inventory)"), false);
         source.sendSuccess(() -> Messages.info("  delete <world> — delete world + data (asks to confirm)"), false);
+        source.sendSuccess(() -> Messages.info("  hooks [status|reload] — command hooks on world events"), false);
         source.sendSuccess(() -> Messages.info("Players switch with /ws <world>."), false);
+        return 1;
+    }
+
+    /** {@code /wsc hooks [status]}: show the enabled state, default run-as and configured counts. */
+    private static int executeHooksStatus(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        CommandHooksConfig config = CommandHookService.config();
+        source.sendSuccess(() -> Messages.highlight("Command hooks"), false);
+        source.sendSuccess(() -> Messages.info("  enabled: " + Config.enableCommandHooks()), false);
+        source.sendSuccess(() -> Messages.info("  default run-as: " + Config.hookDefaultRunAs()), false);
+        source.sendSuccess(() -> Messages.info("  global hooks: " + config.globalHookCount()), false);
+        source.sendSuccess(() -> Messages.info("  per-world hooks: " + config.perWorldHookCount()
+                + " across " + config.worldIds().size() + " world(s)"), false);
+        for (String worldId : config.worldIds()) {
+            source.sendSuccess(() -> Messages.info("    " + worldId + ": " + config.hookCount(worldId)), false);
+        }
+        source.sendSuccess(() -> Messages.info("File: serverconfig/worldswitcher-hooks.json "
+                + "— edit and /wsc hooks reload."), false);
+        return 1;
+    }
+
+    /** {@code /wsc hooks reload}: reload the JSON file live and report the loaded counts. */
+    private static int executeHooksReload(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        CommandHooksConfig config = CommandHookService.reload(source.getServer());
+        source.sendSuccess(() -> Messages.info("Reloaded command hooks: " + config.globalHookCount()
+                + " global, " + config.perWorldHookCount() + " per-world across "
+                + config.worldIds().size() + " world(s). Check the log for any parse warnings."), true);
         return 1;
     }
 

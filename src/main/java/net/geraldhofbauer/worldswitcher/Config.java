@@ -91,6 +91,23 @@ public final class Config {
                     "weather are inherited from the overworld (like the vanilla nether/end).")
             .define("perWorldTimeAndWeather", true);
 
+    private static final ModConfigSpec.BooleanValue ANNOUNCE_SWITCHES = BUILDER
+            .comment("Broadcast a clickable chat message to all other online players when someone",
+                    "switches worlds, so they can click the world name to follow.")
+            .define("announceSwitches", true);
+
+    private static final ModConfigSpec.BooleanValue ENABLE_COMMAND_HOOKS = BUILDER
+            .comment("Master toggle for the command-hook system. When on, admin-defined commands in",
+                    "serverconfig/worldswitcher-hooks.json run automatically on world events",
+                    "(first player joins a world, last player leaves, a player switches world).")
+            .define("enableCommandHooks", true);
+
+    private static final ModConfigSpec.ConfigValue<String> HOOK_DEFAULT_RUN_AS = BUILDER
+            .comment("Default run-as for hooks that don't set their own 'as': 'server' runs at OP",
+                    "level 4 with output suppressed and positioned at the world, 'player' runs as",
+                    "the triggering player (bound by their own permission level).")
+            .defineInList("hookDefaultRunAs", "server", java.util.Arrays.asList("server", "player"));
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     private Config() {
@@ -158,5 +175,17 @@ public final class Config {
 
     public static boolean swapToughAsNails() {
         return SWAP_TOUGH_AS_NAILS.get();
+    }
+
+    public static boolean announceSwitches() {
+        return ANNOUNCE_SWITCHES.get();
+    }
+
+    public static boolean enableCommandHooks() {
+        return ENABLE_COMMAND_HOOKS.get();
+    }
+
+    public static String hookDefaultRunAs() {
+        return HOOK_DEFAULT_RUN_AS.get();
     }
 }
