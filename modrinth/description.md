@@ -8,6 +8,13 @@ mod, because World Switcher registers no items, blocks or network payloads — c
 vanilla `minecraft:overworld` dimension type with a `worldswitcher:*` key that vanilla clients
 accept.
 
+> 🤖 **AI Collaboration Notice**: The bulk of this project was developed in collaboration with
+> Anthropic's Claude AI (with JetBrains' Junie as a complementary assistant). The AI helped with
+> code implementation, documentation, and project structure. While the core ideas and direction
+> came from human creativity, the AI's assistance made this project more robust and feature-complete.
+> We believe in transparency about AI usage while celebrating the potential of human-AI
+> collaboration in software development.
+
 ## Features
 
 - **`/ws <world>`** — switch worlds instantly, no server restart. Bare `/ws` lists all worlds
@@ -67,5 +74,13 @@ See `world/serverconfig/worldswitcher-server.toml`, e.g. `separateInventories` (
   `logAdminCommands`, `spawnChunkRadius`.
 - Map mods (BlueMap etc.) will see the extra dimensions and may need per-dimension config.
 - `/execute in worldswitcher:<id> run ...` works as usual — handy for debugging.
+
+## About AI Assistance
+
+This project demonstrates the potential of human-AI collaboration in software development. The AI
+assistant helped with code implementation, documentation, project structure, CI/CD setup and bug
+fixes. While the AI provided technical assistance, all creative decisions, feature ideas and
+project direction came from human input. We believe this transparency about AI usage is important
+for the open-source community.
 
 Full documentation on [GitHub](https://github.com/Gerry3010/neoforge-world-switcher).

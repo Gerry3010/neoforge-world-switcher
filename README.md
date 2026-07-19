@@ -12,6 +12,13 @@ player state (inventory & more) per world.
 network payloads; custom worlds use the vanilla `minecraft:overworld` dimension type with a
 `worldswitcher:*` dimension key, which vanilla clients accept.
 
+> 🤖 **AI Collaboration Notice**: The bulk of this project was developed in collaboration with
+> Anthropic's Claude AI (with JetBrains' Junie as a complementary assistant). The AI helped with
+> code implementation, documentation, and project structure. While the core ideas and direction
+> came from human creativity, the AI's assistance made this project more robust and feature-complete.
+> We believe in transparency about AI usage while celebrating the potential of human-AI
+> collaboration in software development.
+
 ## Commands
 
 ### `/ws <world>` — switch world
@@ -256,3 +263,18 @@ add `gamerule doSeasonCycle false` / `true` next to the others:
 NeoForge 21.0.167, Minecraft 1.21.1, Java 21, Gradle 8.14.3. The `test-server/` folder holds a
 local dedicated server for manual testing (not committed; install NeoForge there with
 `java -jar neoforge-installer.jar --install-server .`).
+
+## About AI Assistance
+
+This project demonstrates the potential of human-AI collaboration in software development. The AI
+assistant helped with:
+
+- Code implementation
+- Documentation writing
+- Project structure
+- CI/CD setup
+- Bug fixes
+
+While the AI provided technical assistance, all creative decisions, feature ideas, and project
+direction came from human input. We believe this transparency about AI usage is important for the
+open-source community.
